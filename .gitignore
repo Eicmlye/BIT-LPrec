@@ -1,0 +1,44 @@
+# .gitignore
+# 首先忽略所有的文件
+*
+
+# 但是不忽略目录
+!*/
+
+# 忽略一些指定的目录名
+backup/
+output/
+#ut/
+runs/
+.vscode/
+build/
+#result1/
+#result/
+#mytest/
+#mytest_double/
+#pretrained_model/
+#gangao/
+#extra/
+#ccpd/
+*.pyc
+*.mp4
+*.avi
+
+# 不忽略下面指定的文件类型
+# 已包含在被忽略目录中的下述类型文件仍会被忽略
+!.gitignore
+!LICENSE
+!*.txt
+!*.md
+!*.hpp
+!*.cpp
+!*.h
+!*.c
+!*.py
+!*.sh
+!*.npy
+!*.jpg
+!*.png
+!*.yaml
+!*.pt
+!*.pth
