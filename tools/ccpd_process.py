@@ -2,8 +2,8 @@ import os
 import shutil
 import cv2
 import numpy as np
-from utils.cv_img_io import cv_imread # EM reconstructed
-from utils.point_order_transform import order_points # EM reconstructed
+from utils.io.cv_img_io import cv_imread # EM reconstructed
+from utils.transform.point_order_transform import order_points # EM reconstructed
 
 def allFilePath(rootPath,allFIleList):
     fileList = os.listdir(rootPath)

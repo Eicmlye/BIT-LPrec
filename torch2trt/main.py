@@ -7,10 +7,10 @@ import argparse
 root_path=os.path.dirname(os.path.abspath(os.path.dirname(__file__))) # 项目根路径：获取当前路径，再上级路径
 sys.path.append(root_path)  # 将项目根路径写入系统路径
 from utils.general import check_img_size,non_max_suppression_face,scale_coords,xyxy2xywh
-from utils.datasets import letterbox
+from utils.train.datasets import letterbox
 from detect_plate import scale_coords_landmarks,show_results
 from torch2trt.trt_model import TrtModel
-from utils.cv_img_io import cv_imread # EM reconstructed
+from utils.io.cv_img_io import cv_imread # EM reconstructed
 cur_path=os.path.abspath(os.path.dirname(__file__))
 def img_process(img_path,long_side=640,stride_max=32):
     '''
