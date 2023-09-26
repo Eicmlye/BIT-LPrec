@@ -5,7 +5,7 @@ import os
 import time
 import sys
 
-from plate_recognition.plateNet import plateNet_ocr_color
+from networks.plate_recognition.plateNet import plateNet_ocr_color
 
 def allFilePath(rootPath, allFileList):
     fileList = os.listdir(rootPath)

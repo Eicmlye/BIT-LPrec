@@ -1,4 +1,4 @@
-from car_recognition.carNet import carNet
+from networks.car_recognition.carNet import carNet
 import torch
 import cv2
 import torch.nn.functional as F
@@ -34,7 +34,7 @@ def allFilePath(rootPath,allFIleList):
 def get_color_and_score(model, img, device):
     img = imge_processing(img, device)
     result = model(img)
-    out = F.softmax(result)
+    out = F.softmax(result, dim=1)
     _, predicted = torch.max(out.data, 1)
     out = out.data.cpu().numpy().tolist()[0]
     predicted = predicted.item()

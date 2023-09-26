@@ -4,10 +4,10 @@ import cv2
 import copy
 import os
 import argparse
-from utils.point_order_transform import four_point_transform
+from utils.transform.point_order_transform import four_point_transform
 from PIL import Image, ImageDraw, ImageFont
 import time
-from utils.cv_img_io import cv_imread # EM reconstructed
+from utils.io.cv_img_io import cv_imread, cv2ImgAddText # EM reconstructed
 
 plate_color_list=['黑色','蓝色','绿色','白色','黄色']
 plateName=r"#京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新学警港澳挂使领民航危0123456789ABCDEFGHJKLMNPQRSTUVWXYZ险品"
@@ -152,15 +152,6 @@ def rec_plate(outputs,img0,session_rec):  #识别车牌
         result_dict['plate_color']=plate_color
         dict_list.append(result_dict)
     return dict_list
-
-def cv2ImgAddText(img, text, left, top, textColor=(0, 255, 0), textSize=20):  #将识别结果画在图上
-    if (isinstance(img, np.ndarray)):  #判断是否OpenCV图片类型
-        img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    draw = ImageDraw.Draw(img)
-    fontText = ImageFont.truetype(
-        "fonts/platech.ttf", textSize, encoding="utf-8")
-    draw.text((left, top), text, textColor, font=fontText)
-    return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
 def draw_result(orgimg,dict_list):
     result_str =""

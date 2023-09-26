@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import shutil
 from tqdm import tqdm
-from utils.cv_img_io import cv_imread # EM reconstructed
+from utils.io.cv_img_io import cv_imread # EM reconstructed
 
 root = '/ssd_1t/derron/WiderFace'
 

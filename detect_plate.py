@@ -13,14 +13,13 @@ import copy
 import numpy as np
 
 from models.experimental import attempt_load
-from utils.point_order_transform import four_point_transform # EM reconstructed
-from utils.cv_img_io import cv_imread, cv_imwrite # EM reconstructed
-from utils.datasets import letterbox
+from utils.transform.point_order_transform import four_point_transform # EM reconstructed
+from utils.io.cv_img_io import cv_imread, cv_imwrite, cv2ImgAddText # EM reconstructed
+from utils.train.datasets import letterbox
 from utils.general import check_img_size, non_max_suppression_face, scale_coords
-from utils.cv_puttext import cv2ImgAddText
-from plate_recognition.plate_rec import get_plate_result, allFilePath, init_plate_rec_model
-from plate_recognition.double_plate_split_merge import get_split_merge
-from car_recognition.car_rec import get_color_and_score, init_car_rec_model
+from networks.plate_recognition.plate_rec import get_plate_result, allFilePath, init_plate_rec_model
+from networks.plate_recognition.double_plate_split_merge import get_split_merge
+from networks.car_recognition.car_rec import get_color_and_score, init_car_rec_model
 
 clors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)] # 车牌角点标识颜色
 object_color = [(0, 255, 255), (0, 255, 0), (255, 255, 0)]
@@ -165,7 +164,7 @@ def get_rec_landmark(img, xyxy, conf, landmarks, class_num,
 
 def detect_recognition_plate(model, orgimg, device, car_rec_model, plate_rec_model, img_size, is_color=False):
     """
-    获取车牌信息.
+    识别车辆、车牌并获取对象信息.
     """
 
     # Load model
@@ -313,7 +312,7 @@ def draw_result(orgimg, dict_list, do_draw = True):
                         object_color[object_no],
                         2) # 画 ROI 框       
     
-    print(result_str)
+    print(result_str + '\033[K')
 
     return orgimg, rename_str
 
@@ -354,7 +353,7 @@ def process_single_image(count,
     print(count + 1, img_path, end=" ")
     img = cv_imread(img_path)
 
-    if img is None:                   
+    if img is None:
         print('Cannot open image: %s. ' % (img_path))
         return
     if img.shape[-1] == 4:
@@ -375,8 +374,8 @@ if __name__ == '__main__':
     # parser.add_argument('--no_prompt', action='store_true', help='是否开启提示信息')
 
     parser.add_argument('--detect_model', nargs = '+', type = str, default = 'weights/plate_detect.pt', help = '检测模型路径, model.pt')
-    parser.add_argument('--plate_rec_model', type=str, default='weights/plate_rec_color.pth', help='车牌识别及颜色识别模型路径, model.pth')
-    parser.add_argument('--car_rec_model', type=str, default='weights/car_rec_color.pth', help='车辆识别及颜色识别模型路径, model.pth')
+    parser.add_argument('--plate_rec_model', type=str, default='weights/plate_rec_color.pth', help='车牌识别模型路径, model.pth')
+    parser.add_argument('--car_rec_model', type=str, default='weights/car_rec_color.pth', help='车辆识别模型路径, model.pth')
 
     parser.add_argument('--is_video', action='store_true', help='处理图片还是视频')
     parser.add_argument('--is_color', action='store_true', help='是否识别颜色')
@@ -392,6 +391,8 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     print(opt)
 
+    os.system('cd ./') # 激活 \033[ 命令行光标操作转义字符.
+
     save_path = opt.output
     if not os.path.exists(save_path): 
         os.mkdir(save_path)
@@ -404,9 +405,9 @@ if __name__ == '__main__':
     total_car_rec = sum(p.numel() for p in car_rec_model.parameters())
     total_plate_det = sum(p.numel() for p in detect_model.parameters())
     total_plate_rec = sum(p.numel() for p in plate_rec_model.parameters())
-    print("车辆检测模型参数量: %.2f 万. " % (total_car_rec / 1e4))
+    print("========\n车辆检测模型参数量: %.2f 万. " % (total_car_rec / 1e4))
     print("车牌检测模型参数量: %.2f 万. " % (total_plate_det / 1e4))
-    print("车牌识别模型参数量: %.2f 万. " % (total_plate_rec / 1e4))
+    print("车牌识别模型参数量: %.2f 万. \n========" % (total_plate_rec / 1e4))
     
     if not opt.is_video: # Image detection and recognition
         count = 0 # 处理项目数计数器
@@ -433,7 +434,7 @@ if __name__ == '__main__':
                     time_all += time_gap 
                 count += 1
 
-            print(f"{time.time() - time_begin:.2f} s in total, {time_all / (len(file_list) - 1):.2f} s per image on average. ")
+            print(f"处理总用时 {time.time() - time_begin:.2f} s, 平均处理速率 {time_all / (len(file_list) - 1):.2f} fps. ")
     else: # Video input.
         video_name = opt.video_path
         capture = cv2.VideoCapture(video_name)
@@ -457,16 +458,18 @@ if __name__ == '__main__':
         if capture.isOpened():
             # See https://blog.csdn.net/u011436429/article/details/80604590
             # for OpenCV VideoCapture.get() arguments.
-            totalFrames = capture.get(7) # 视频文件的帧数
+            totalFrames = int(capture.get(7)) # 视频文件的帧数
 
             while True:
                 t1 = cv2.getTickCount()
                 ret, img = capture.read()
+                if frame_count > 0 and ret: # 刷新式更新处理进度信息.
+                    print('\r\033[3A', end='')
                 if not ret:
                     break
                 
                 frame_count += 1
-                print(f"({frame_count/totalFrames:.2f}%) 第 {frame_count}/{totalFrames} 帧", end=" ")
+                print(f"({frame_count / totalFrames * 100:.2f}%) 第 {frame_count}/{totalFrames} 帧\033[K")
                 img0 = copy.deepcopy(img)
                 dict_list = detect_recognition_plate(detect_model, img, device, car_rec_model, 
                                                      plate_rec_model, opt.img_size, opt.is_color)
@@ -475,14 +478,17 @@ if __name__ == '__main__':
                 t2 = cv2.getTickCount()
                 infer_time = (t2 - t1) / cv2.getTickFrequency()
                 fps = 1.0 / infer_time
+
+                eta = (totalFrames - frame_count) * infer_time
                 fps_all += fps
-                str_fps = f'Processing fps: {fps:.4f}'
+                # str_fps = f'Processing fps: {fps:.4f}'
                 
                 # 写入处理帧信息.
-                cv2.putText(ori_img, str_fps, (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                # cv2.putText(ori_img, str_fps, (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 out.write(ori_img)
 
-                print('\n')
+                # 每处理 15 帧更新一次预测剩余时间.
+                print(f"预计剩余时间: {int(eta)} s. \033[K" if not (frame_count % 15) else '')
         else:
             print("视频加载失败. ")
 

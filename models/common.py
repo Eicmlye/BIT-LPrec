@@ -8,10 +8,10 @@ import torch
 import torch.nn as nn
 from PIL import Image, ImageDraw
 
-from utils.datasets import letterbox
+from utils.train.datasets import letterbox
 from utils.general import non_max_suppression, make_divisible, scale_coords, xyxy2xywh
-from utils.plots import color_list
-from utils.cv_img_io import cv_imread # EM reconstructed
+from utils.train.plots import color_list
+from utils.io.cv_img_io import cv_imread # EM reconstructed
 
 def autopad(k, p=None):  # kernel, padding
     # Pad to 'same'

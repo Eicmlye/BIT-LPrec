@@ -5,10 +5,10 @@ from openvino.runtime import Core
 import os
 import time
 import copy
-from utils.point_order_transform import four_point_transform
+from utils.transform.point_order_transform import four_point_transform
 from PIL import Image, ImageDraw, ImageFont
 import argparse
-from utils.cv_img_io import cv_imread # EM reconstructed
+from utils.io.cv_img_io import cv_imread, cv2ImgAddText # EM reconstructed
 
 def cv_imread(path):
     img=cv2.imdecode(np.fromfile(path,dtype=np.uint8),-1)
@@ -162,17 +162,6 @@ def rec_plate(outputs,img0,rec_model,rec_output):
         result_dict['roi_height']=roi_img.shape[0]
         dict_list.append(result_dict)
     return dict_list
-
-
-
-def cv2ImgAddText(img, text, left, top, textColor=(0, 255, 0), textSize=20):
-    if (isinstance(img, np.ndarray)):  #判断是否OpenCV图片类型
-        img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    draw = ImageDraw.Draw(img)
-    fontText = ImageFont.truetype(
-        "fonts/platech.ttf", textSize, encoding="utf-8")
-    draw.text((left, top), text, textColor, font=fontText)
-    return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
 def draw_result(orgimg,dict_list):
     result_str =""

@@ -85,8 +85,8 @@ python detect_plate.py --is_video
 | 参数 | 定义 | 用法 |
 | --- | --- | --- |
 | `detect_model` | 车牌检测模型的路径, 一般保存在 `weights/` | `--detect_model <my_model_path>` |
-| `plate_rec_model` | 车牌识别及颜色识别模型的路径, 一般保存在 `weights/` | `--plate_rec_model <my_model_path>` |
-| `car_rec_model` | 车辆识别及颜色识别模型的路径, 一般保存在 `weights/` | `--car_rec_model <my_model_path>` |
+| `plate_rec_model` | 车牌识别模型的路径, 一般保存在 `weights/` | `--plate_rec_model <my_model_path>` |
+| `car_rec_model` | 车辆识别模型的路径, 一般保存在 `weights/` | `--car_rec_model <my_model_path>` |
 | `is_video` | 待处理的是否为视频. 该参数为触发式, 不接受主动赋值. | `--is_video` |
 | `is_color` | 是否识别颜色. 该参数为触发式, 不接受主动赋值. | `--is_color` |
 | `do_draw` | 是否绘制识别框. 该参数为触发式, 不接受主动赋值. | `--do_draw` |

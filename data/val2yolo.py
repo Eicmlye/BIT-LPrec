@@ -5,7 +5,7 @@ import shutil
 import sys
 from tqdm import tqdm
 
-from utils.cv_img_io import cv_imread # EM reconstructed
+from utils.io.cv_img_io import cv_imread # EM reconstructed
 
 def xywh2xxyy(box):
     x1 = box[0]
