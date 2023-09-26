@@ -1,15 +1,14 @@
-from car_recognition.myNet import myNet
+from car_recognition.carNet import carNet
 import torch
 import cv2
 import torch.nn.functional as F
 import os
-import numpy as np
 
 colors = ['黑色','蓝色','黄色','棕色','绿色','灰色','橙色','粉色','紫色','红色','白色']
 def init_car_rec_model(model_path,device):
     check_point = torch.load(model_path)
     cfg= check_point['cfg']  
-    model = myNet(num_classes=11,cfg=cfg)
+    model = carNet(num_classes=11,cfg=cfg)
     model.load_state_dict(check_point['state_dict'])
     model.to(device) 
     model.eval()
