@@ -60,3 +60,31 @@ def four_point_transform(image, pts):
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 
     return warped
+
+def scale_coords_landmarks(img1_shape, coords, img0_shape, ratio_pad=None):
+    """
+    【功能暂不确定】将 ROI 坐标还原为 ROI 区域的角点坐标列表. 
+    """
+
+    # Rescale coords (xyxy) from img1_shape to img0_shape
+    if ratio_pad is None:  # calculate from img0_shape
+        gain = min(img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1])  # gain = old / new
+        pad = (img1_shape[1] - img0_shape[1] * gain) / 2, (img1_shape[0] - img0_shape[0] * gain) / 2  # wh padding
+    else:
+        gain = ratio_pad[0][0]
+        pad = ratio_pad[1]
+
+    coords[:, [0, 2, 4, 6]] -= pad[0]  # x padding
+    coords[:, [1, 3, 5, 7]] -= pad[1]  # y padding
+    coords[:, :8] /= gain
+    
+    coords[:, 0].clamp_(0, img0_shape[1])  # x1
+    coords[:, 1].clamp_(0, img0_shape[0])  # y1
+    coords[:, 2].clamp_(0, img0_shape[1])  # x2
+    coords[:, 3].clamp_(0, img0_shape[0])  # y2
+    coords[:, 4].clamp_(0, img0_shape[1])  # x3
+    coords[:, 5].clamp_(0, img0_shape[0])  # y3
+    coords[:, 6].clamp_(0, img0_shape[1])  # x4
+    coords[:, 7].clamp_(0, img0_shape[0])  # y4
+
+    return coords # coords is a torch.tensor here. 

@@ -5,10 +5,10 @@ from openvino.runtime import Core
 import os
 import time
 import copy
-from utils.transform.point_order_transform import four_point_transform
+from utils.transform.region_transform import four_point_transform
 from PIL import Image, ImageDraw, ImageFont
 import argparse
-from utils.io.cv_img_io import cv_imread, cv2ImgAddText # EM reconstructed
+from utils.io.cv_img import cv_imread, cv2ImgAddText # EM reconstructed
 
 def cv_imread(path):
     img=cv2.imdecode(np.fromfile(path,dtype=np.uint8),-1)

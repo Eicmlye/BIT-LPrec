@@ -12,10 +12,13 @@ import torch
 import copy
 import numpy as np
 
-from utils.transform.point_order_transform import four_point_transform # EM reconstructed
-from utils.io.cv_img_io import cv_imread, cv_imwrite, cv2ImgAddText # EM reconstructed
+from utils.transform.region_transform import four_point_transform, scale_coords_landmarks # EM reconstructed
+from utils.io.cv_img import cv_imread, cv_imwrite, cv2ImgAddText # EM reconstructed
+from utils.io.cmd_cursor import activate_cmd_cursor_opr # EM added
+from utils.io.modify_filename import get_extension_index, control_filename_len # EM added
 from utils.test.parser_arg import show_args # EM added
 from utils.test.load import load_models, choose_device # EM added
+from utils.test.plate_format import rename_special_plate, check_plate_format # EM added
 from utils.train.datasets import letterbox
 from utils.general import check_img_size, non_max_suppression_face, scale_coords
 from networks.plate_recognition.plate_rec import get_plate_result, allFilePath
@@ -23,39 +26,11 @@ from networks.plate_recognition.double_plate_split_merge import get_split_merge
 from networks.car_recognition.car_rec import get_color_and_score
 
 clors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)] # 车牌角点标识颜色
-object_color = [(0, 255, 255), (0, 255, 0), (255, 255, 0)]
+object_color = [(0, 255, 255), (0, 255, 0), (255, 255, 0)] # ROI 区域标识颜色
 class_type = ['单层车牌', '双层车牌', '汽车']
 
-def scale_coords_landmarks(img1_shape, coords, img0_shape, ratio_pad=None):
-    """
-    【功能暂不确定】将 ROI 坐标还原为 ROI 区域的角点坐标列表. 
-    """
-
-    # Rescale coords (xyxy) from img1_shape to img0_shape
-    if ratio_pad is None:  # calculate from img0_shape
-        gain = min(img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1])  # gain = old / new
-        pad = (img1_shape[1] - img0_shape[1] * gain) / 2, (img1_shape[0] - img0_shape[0] * gain) / 2  # wh padding
-    else:
-        gain = ratio_pad[0][0]
-        pad = ratio_pad[1]
-
-    coords[:, [0, 2, 4, 6]] -= pad[0]  # x padding
-    coords[:, [1, 3, 5, 7]] -= pad[1]  # y padding
-    coords[:, :8] /= gain
-    
-    coords[:, 0].clamp_(0, img0_shape[1])  # x1
-    coords[:, 1].clamp_(0, img0_shape[0])  # y1
-    coords[:, 2].clamp_(0, img0_shape[1])  # x2
-    coords[:, 3].clamp_(0, img0_shape[0])  # y2
-    coords[:, 4].clamp_(0, img0_shape[1])  # x3
-    coords[:, 5].clamp_(0, img0_shape[0])  # y3
-    coords[:, 6].clamp_(0, img0_shape[1])  # x4
-    coords[:, 7].clamp_(0, img0_shape[0])  # y4
-
-    return coords # coords is a torch.tensor here. 
-
 def get_rec_landmark(img, xyxy, conf, landmarks, class_num, 
-                           device, rec_model, is_color=False):
+                     device, rec_model, is_color=False):
     """
     1. 获取车辆 ROI 区域.
     2. 获取车牌 ROI 区域和车牌号. 
@@ -161,6 +136,16 @@ def get_rec_landmark(img, xyxy, conf, landmarks, class_num,
 def detect_recognition_plate(models, orgimg, device, img_size, is_color=False):
     """
     识别车辆、车牌并获取对象信息.
+
+    ## Parameters:
+
+    `models`: 加载好的模型列表, 按顺序依次为:
+
+        `car_rec_model`: 加载好的车辆识别模型.
+
+        `detect_model`: 加载好的车牌检测模型. 
+
+        `plate_rec_model`: 加载好的车牌识别模型.
     """
 
     # Load model
@@ -215,14 +200,38 @@ def detect_recognition_plate(models, orgimg, device, img_size, is_color=False):
 
     return dict_list
 
-def draw_result(orgimg, dict_list, do_draw = True):
+def restruct_plate_info(orgimg, object_no, rect_area):
     """
-    输出识别结果信息, 并按要求绘制车牌结果. 
+    通过 `rect_area` 计算可视化所需的数据格式. 
+    """
+    
+    area = None
+
+    if object_no == 2: # car
+        area = int((rect_area[3] - rect_area[1]) / 20)
+    else: # plate
+        x, y, w, h = rect_area[0], rect_area[1], rect_area[2] - rect_area[0], rect_area[3] - rect_area[1]
+        padding_w = 0.05 * w
+        padding_h = 0.11 * h
+
+        area = []
+        area.append(max(0, int(x - padding_w)))
+        area.append(max(0, int(y - padding_h)))
+        area.append(min(orgimg.shape[1], int(rect_area[2] + padding_w)))
+        area.append(min(orgimg.shape[0], int(rect_area[3] + padding_h)))
+
+    return area
+
+# TODO: ROI 的主要处理在 visualize_result() 中. 
+# 应将车位判定、滞留判定等功能分离, visualize_result() 仅处理绘制功能. 
+def visualize_result(orgimg, dict_list, do_draw = True, is_color = True):
+    """
+    接收 `detect_recognition_plate()` 的处理结果, 输出识别结果信息, 并按要求绘制车牌结果. 
 
     ## Parameters:
     `orgimg`: 原始图像.
 
-    `dict_list`: 识别到的所有对象及其信息. 其元素结构是 `get_rec_landmark()` 返回的 `result_dict`. 
+    `dict_list`: 识别到的所有对象及其信息. 其元素是 `get_rec_landmark()` 返回的 `result_dict`. 
         
         `result_dict`: 
 
@@ -251,41 +260,40 @@ def draw_result(orgimg, dict_list, do_draw = True):
         object_no = result['object_no']
         
         if object_no == 2: # car
-            height_area = int((rect_area[3] - rect_area[1]) / 20)
-            car_color_str = result['car_color']
-            orgimg = cv2ImgAddText(orgimg, 
-                                   car_color_str, 
-                                   rect_area[0],
-                                   rect_area[1],
-                                   (0, 255, 0),
-                                   height_area)
+            height_area = restruct_plate_info(orgimg, object_no, rect_area)
+
+            car_color_str = result['car_color'] if is_color else ''
+
+            if do_draw:
+                orgimg = cv2ImgAddText(orgimg, car_color_str, 
+                                       rect_area[0], rect_area[1],
+                                       (0, 255, 0), height_area)
         else: # plate
-            x, y, w, h = rect_area[0], rect_area[1], rect_area[2] - rect_area[0], rect_area[3] - rect_area[1]
-            padding_w = 0.05 * w
-            padding_h = 0.11 * h
-            rect_area[0] = max(0, int(x - padding_w))
-            rect_area[1] = max(0, int(y - padding_h))
-            rect_area[2] = min(orgimg.shape[1], int(rect_area[2] + padding_w))
-            rect_area[3] = min(orgimg.shape[0], int(rect_area[3] + padding_h))
+            rect_area = restruct_plate_info(orgimg, object_no, rect_area)
 
             landmarks = result['landmarks']
-            result_p = result['plate_no']
+            plate = result['plate_no']
+            result_plate_str = ""
 
-            if len(result_p) > 2 and result_p[1] == '0': # EM added: special 'O' character
-                result_p = result_p[0] + 'O' + result_p[2:]
+            if check_plate_format(plate):
+                plate = rename_special_plate(plate)
+            else:
+                result_plate_str = "\033[31m(格式错误)\033[0m"
+
+            result_plate_str = plate + result_plate_str
 
             if rename_str == "": # EM added: problem requirement
-                if '危' not in result_p and '险' not in result_p and '品' not in result_p: # 不识别危险品标志
-                    rename_str = result_p
+                if '危' not in plate and '险' not in plate and '品' not in plate: # 不识别危险品标志
+                    rename_str = plate
 
-            result_p += " " + result['plate_color'] + ("双层" if result['object_no'] == 1 else "")
-            result_str += result_p + " "
+            result_plate_str += " " + (result['plate_color'] if is_color else '') + ("双层" if object_no == 1 else "")
+            result_str += result_plate_str + " "
 
             if do_draw:
                 for i in range(4): # 绘制车牌角点
                     cv2.circle(orgimg, (int(landmarks[i][0]), int(landmarks[i][1])), 5, clors[i], -1)
                 
-                labelSize = cv2.getTextSize(result_p, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1) # 获得字体的大小
+                labelSize = cv2.getTextSize(result_plate_str, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1) # 获得字体的大小
                 if rect_area[0] + labelSize[0][0] > orgimg.shape[1]: # 防止显示的文字越界
                     rect_area[0] = int(orgimg.shape[1] - labelSize[0][0])
                 orgimg = cv2.rectangle(orgimg, # 画文字框
@@ -295,33 +303,24 @@ def draw_result(orgimg, dict_list, do_draw = True):
                                        cv2.FILLED)
                 
                 if len(result) >= 1:
-                    orgimg = cv2ImgAddText(orgimg, 
-                                           result['plate_no'], 
-                                           rect_area[0], 
+                    orgimg = cv2ImgAddText(orgimg, plate, rect_area[0], 
                                            int(rect_area[1] - round(1.6 * labelSize[0][1])), 
-                                           (0, 0, 0), 
-                                           21)
+                                           (0, 0, 0), 21)
         
         if do_draw:
             cv2.rectangle(orgimg,
-                        (rect_area[0],rect_area[1]),
-                        (rect_area[2],rect_area[3]),
-                        object_color[object_no],
-                        2) # 画 ROI 框       
+                        (rect_area[0], rect_area[1]),
+                        (rect_area[2], rect_area[3]),
+                        object_color[object_no], 2) # 画 ROI 框       
     
-    print(result_str + '\033[K')
+    if result_str == '':
+        result_str = '\033[31m未识别到有效对象. \033[0m'
+    print('\t' + result_str + '\033[K')
 
     return orgimg, rename_str
 
-def process_single_image(count, 
-                         img_path,
-                         device,
-                         models,
-                         img_size,
-                         is_color,
-                         do_draw,
-                         save_path
-                         ):
+def process_single_image(count, img_path, device, models,
+                         img_size, is_color, do_draw, save_path):
     """
     处理单张图片. 
 
@@ -349,7 +348,9 @@ def process_single_image(count,
     `save_path`: 处理结果保存路径.
     """
 
-    print(count + 1, img_path, end=" ")
+    prompt_img_path = control_filename_len(img_path, 20)
+    print(str(count + 1) + '\t', prompt_img_path)
+
     img = cv_imread(img_path)
 
     if img is None:
@@ -357,10 +358,9 @@ def process_single_image(count,
         return
     if img.shape[-1] == 4:
         img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-    dict_list = detect_recognition_plate(models, img, device,
-                                         img_size, is_color) # 识别车辆, 检测以及识别车牌
+    dict_list = detect_recognition_plate(models, img, device, img_size, is_color) # 识别车辆, 检测并识别车牌
     
-    ori_img, result_str = draw_result(img, dict_list, do_draw) # 将车辆和车牌识别结果画在图上, 并输出车牌字符串
+    ori_img, result_str = visualize_result(img, dict_list, do_draw, is_color) # 将车辆和车牌识别结果画在图上, 并输出车牌字符串
     
     img_name = '_' + result_str + '_' + os.path.basename(img_path) # EM modified: problem requirement
     save_img_path = os.path.join(save_path, img_name) # 图片保存的路径
@@ -390,11 +390,7 @@ if __name__ == '__main__':
     device, device_choice = choose_device(opt.use_gpu)
     show_args(opt, device_choice)
 
-    # See https://blog.csdn.net/qq_51427262/article/details/128571536
-    # for necessity of this line. 
-    # See https://blog.csdn.net/yuhai738639/article/details/79221835
-    # for \033[ usages. 
-    os.system('cd ./') # 激活 \033[ 命令行光标操作转义字符.
+    activate_cmd_cursor_opr()
 
     save_path = opt.output
     if not os.path.exists(save_path): 
@@ -429,7 +425,7 @@ if __name__ == '__main__':
                     time_all += time_gap 
                 count += 1
 
-            print(f"处理总用时 {time.time() - time_begin:.2f} s, 平均处理速率 {time_all / (len(file_list) - 1):.2f} fps. ")
+            print(f"处理总用时 {time.time() - time_begin:.2f} s, 单帧平均处理用时 {time_all / (len(file_list) - 1):.2f} s. ")
     else: # Video input.
         video_name = opt.video_path
         capture = cv2.VideoCapture(video_name)
@@ -437,14 +433,9 @@ if __name__ == '__main__':
         fps = capture.get(cv2.CAP_PROP_FPS) # 帧数
         width, height = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)) # 宽高
 
-        extension = 0
-        for index in range(len(video_name)):
-            rev_ind = len(video_name) - index - 1
-            if video_name[rev_ind] == '.':
-                extension = rev_ind
-                break
-        output_path = os.path.basename(video_name[:extension] + '_result.mp4')
-        output_path = os.path.join(save_path, output_path)
+        extension = get_extension_index(video_name)
+        output_path = os.path.join(save_path, os.path.basename(video_name[:extension] + '_result.mp4'))
+
         out = cv2.VideoWriter(output_path, fourcc, fps, (width, height)) # 写入视频
 
         frame_count = 0
@@ -467,7 +458,7 @@ if __name__ == '__main__':
                 print(f"({frame_count / totalFrames * 100:.2f}%) 第 {frame_count}/{totalFrames} 帧\033[K")
                 img0 = copy.deepcopy(img)
                 dict_list = detect_recognition_plate(models, img, device, opt.img_size, opt.is_color)
-                ori_img, _ = draw_result(img, dict_list, opt.do_draw)
+                ori_img, _ = visualize_result(img, dict_list, opt.do_draw)
                 
                 t2 = cv2.getTickCount()
                 infer_time = (t2 - t1) / cv2.getTickFrequency()
