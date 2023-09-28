@@ -20,11 +20,15 @@ def show_args(opt: argparse.Namespace, device_choice: bool):
     print(("待识别视频: " + opt.video_path) if opt.is_video else ("待识别图片: " + opt.image_path))\
 
     output_path = opt.output
-    if opt.is_video:
-        video_name = opt.video_path
-        extension = get_extension_index(video_name)
+    if output_path == None:
+        output_path = 'output/'
+        if opt.is_video:
+            video_name = opt.video_path
+            extension = get_extension_index(video_name)
 
-        output_path = os.path.join(opt.output, os.path.basename(video_name[:extension] + '_result.mp4'))
+            output_path = os.path.join(output_path, os.path.basename(video_name[:extension])) + '/'
+
+    opt.output = output_path
     print("处理结果保存位置: " + output_path)
 
     print("模型超参数设置: ")
@@ -40,8 +44,8 @@ def show_args(opt: argparse.Namespace, device_choice: bool):
     print("\t以 CPU 模式处理" if opt.use_gpu == False else '', end='')
     print('')
     
-    print("\t绘制识别框" if opt.do_draw else '')
-    print("\t输出对象颜色信息" if opt.is_color else '')
+    print('\t' + ('' if opt.do_draw else '不') + "绘制识别框")
+    print('\t' + ('' if opt.is_color else '不') + "输出对象颜色信息")
         
     # ending line
     print("========")
