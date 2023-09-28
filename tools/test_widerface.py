@@ -10,7 +10,7 @@ from utils.train.datasets import letterbox
 from utils.general import check_img_size, non_max_suppression_face, scale_coords, xyxy2xywh
 from utils.torch_utils import select_device
 from tqdm import tqdm
-from utils.io.cv_img_io import cv_imread # EM reconstructed
+from utils.io.cv_img import cv_imread # EM reconstructed
 
 def dynamic_resize(shape, stride=64):
     max_size = max(shape[0], shape[1])

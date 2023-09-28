@@ -2,7 +2,7 @@ import json
 import os
 import numpy as np
 from copy import deepcopy
-from utils.io.cv_img_io import cv_imread # EM reconstructed
+from utils.io.cv_img import cv_imread # EM reconstructed
 
 def allFilePath(rootPath,allFIleList):
     fileList = os.listdir(rootPath)

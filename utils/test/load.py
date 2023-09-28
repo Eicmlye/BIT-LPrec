@@ -3,6 +3,8 @@
 """
 
 import torch
+import os
+import sys
 
 from argparse import Namespace
 from models.experimental import attempt_load
@@ -47,7 +49,7 @@ def choose_device(use_gpu: bool):
     `use_gpu`: 
         
         - `None`: 根据可用资源, 自动优先选择 GPU.
-        - `True`: 只要有 GPU 就用 GPU, 没有 GPU 就强制用 CPU. 【其实和 `None` 好像没区别】
+        - `True`: 有 GPU 就用 GPU, 没有 GPU 就询问用户是否强制结束程序. 
         - `False`: 无论是否有 GPU, 都强制用 CPU. 
 
     ## Return:
@@ -66,6 +68,17 @@ def choose_device(use_gpu: bool):
         device = torch.device("cuda" if use_gpu else "cpu")
     else:
         device_choice = False
-        device = torch.device("cpu")
+        
+        print("无可用 GPU, 是否使用 CPU 处理？ [[y]/n]: ", end='')
+        while True: 
+            choice = input()
+            if choice == '' or choice[0] in ['y', 'Y']:
+                device = torch.device("cpu")
+                break
+            elif choice[0] in ['n', 'N']:
+                print("\033[1A无可用 GPU, 用户选择结束处理. \033[K")
+                sys.exit(1)
+            else:
+                print("请选择\'y\'(默认)或\'n\': ", end='')
 
     return device, device_choice

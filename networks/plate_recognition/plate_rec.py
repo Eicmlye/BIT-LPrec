@@ -7,6 +7,11 @@ import sys
 
 from networks.plate_recognition.plateNet import plateNet_ocr_color
 
+# device = torch.device('cuda') if torch.cuda.is_available() else torch.device("cpu")
+plateName = r"#京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新学警港澳挂使领民航危0123456789ABCDEFGHJKLMNPQRSTUVWXYZ险品"
+color_list = ['黑色', '蓝色', '绿色', '白色', '黄色']
+mean_value, std_value = (0.588, 0.193)
+
 def allFilePath(rootPath, allFileList):
     fileList = os.listdir(rootPath)
     for temp in fileList:
@@ -15,10 +20,6 @@ def allFilePath(rootPath, allFileList):
                 allFileList.append(os.path.join(rootPath,temp))
         else:
             allFilePath(os.path.join(rootPath,temp), allFileList)
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device("cpu")
-plateName = r"#京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新学警港澳挂使领民航危0123456789ABCDEFGHJKLMNPQRSTUVWXYZ险品"
-color_list = ['黑色', '蓝色', '绿色', '白色', '黄色']
-mean_value, std_value = (0.588, 0.193)
 
 def decodePlate(preds):
     pre = 0
