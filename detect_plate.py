@@ -422,7 +422,7 @@ if __name__ == '__main__':
         video_name = opt.video_path
         capture = cv2.VideoCapture(video_name)
         fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-        totalfps = capture.get(cv2.CAP_PROP_FPS) # 帧数
+        totalfps = capture.get(cv2.CAP_PROP_FPS) # 帧率
         width, height = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)) # 宽高
 
         extension = get_extension_index(video_name)
@@ -439,8 +439,9 @@ if __name__ == '__main__':
 
         if capture.isOpened():
             # See https://blog.csdn.net/u011436429/article/details/80604590
+            # and https://blog.csdn.net/qq_43797817/article/details/108096827
             # for OpenCV VideoCapture.get() arguments.
-            totalFrames = int(capture.get(7)) # 视频文件的帧数
+            totalFrames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT)) # 视频文件的帧数
 
             last_flush = time.time() # 上次刷新预测剩余时间的时刻
 
@@ -477,22 +478,27 @@ if __name__ == '__main__':
 
         # 打印订单图片, 保存到 save_path 目录下.
         print('开始打印订单...', end='\n\n')
+        key_frame_count = 0
         for parking in parking_lot_info:
             for getin in parking[1]:
                 if getin[0] > 0:
-                    save_key_frame(getin[0], 0, getin[1], capture, save_path)
+                    key_frame_count += 1
+                    save_key_frame(key_frame_count, parking[0], getin[0], 0, getin[1], capture, save_path)
             for occupy in parking[2]:
                 if occupy[0] > 0:
-                    save_key_frame(occupy[0], 1, occupy[1], capture, save_path)
+                    key_frame_count += 1
+                    save_key_frame(key_frame_count, parking[0], occupy[0], 1, occupy[1], capture, save_path)
             for getout in parking[3]:
                 if getout[0] > 0:
-                    save_key_frame(getout[0], 2, getout[1], capture, save_path)
+                    key_frame_count += 1
+                    save_key_frame(key_frame_count, parking[0], getout[0], 2, getout[1], capture, save_path)
             for release in parking[4]:
                 if release[0] > 0:
-                    save_key_frame(release[0], 3, release[1], capture, save_path)
+                    key_frame_count += 1
+                    save_key_frame(key_frame_count, parking[0], release[0], 3, release[1], capture, save_path)
 
         capture.release()
         out.release()
         cv2.destroyAllWindows()
 
-        print('\r\033[1A订单打印完成. \033[K')
+        print('\r\033[1A\033[K\033[1A订单打印完成. \033[K')

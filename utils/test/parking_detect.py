@@ -90,8 +90,8 @@ def update_parking_info(curFrame: int, dict_list, fps: int, stopped_pos_info: li
 
         return stopped_pos_info, parking_lot_info
 
-    move_dist_thres = 7 # 任一 ROI 坐标摆动超过该像素值, 则认为有实际移动. 
-    distinguish_dist_thres = 15 # 任一 ROI 坐标摆动超过该像素值, 则认为是不同的对象.
+    move_dist_thres = 5 # 任一 ROI 坐标摆动超过该像素值, 则认为有实际移动. 
+    distinguish_dist_thres = 10 # 任一 ROI 坐标摆动超过该像素值, 则认为是不同的对象.
     noise_frame_thres = fps * 5 # 持续该帧数内没有车辆被判定为从该区域移动时, 视该区域为模型噪声.
     parking_time_thres = 5 # 持续停止该时长的位置, 视为停车位.
     parking_frame_thres = fps * parking_time_thres
@@ -171,7 +171,7 @@ def update_parking_info(curFrame: int, dict_list, fps: int, stopped_pos_info: li
 
     return stopped_pos_info, parking_lot_info
 
-def save_key_frame(frame_no: int, status: int, plate: str, capture: cv2.VideoCapture, save_path:str):
+def save_key_frame(count: int, roi, frame_no: int, status: int, plate: str, capture: cv2.VideoCapture, save_path:str):
     """
     See https://blog.csdn.net/yuejisuo1948/article/details/80734908
     for getting a specific frame of a video.
@@ -191,6 +191,9 @@ def save_key_frame(frame_no: int, status: int, plate: str, capture: cv2.VideoCap
     ret, img = capture.read() # 返回一个布尔值和一个视频帧. 若帧读取成功, 则返回True.
 
     if ret:
+        cv2.rectangle(img, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (0, 0, 255), 1)
+
         filename = '_' + plate + '_' + status_list[status] + '.jpg'
-        cv_imwrite(img, os.path.join(save_path, filename))
-        print('\r\033[1A已打印订单 ' + filename + '\033[K')
+        output_path = os.path.join(save_path, filename)
+        cv_imwrite(img, output_path)
+        print(f"\r\033[1A{count}\t已打印订单 " + filename + "\033[K")

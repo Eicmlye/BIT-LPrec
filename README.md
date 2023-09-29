@@ -18,11 +18,10 @@
 - [自定义处理](#自定义处理)
     - [参数解释](#参数解释)
 - [训练方法](#训练方法)
-    - [车辆识别](#车辆识别)
-    - [车牌处理](#车牌处理)
-        - [检测训练](#检测训练)
-        - [识别训练](#识别训练)
+    - [检测训练](#检测训练)
+    - [识别训练](#识别训练)
 - [项目分析](#项目分析)
+    - [定义](#定义)
 - [参考资料](#参考资料)
 
 ## 环境要求
@@ -74,7 +73,7 @@ python detect_plate.py
 python detect_plate.py --is_video
 ```
 
-测试视频为 `input/videos/test_s.mp4`, 视频识别结果保存在 `output/test_s_result.mp4`.
+测试视频为 `input/videos/short.mp4`, 视频识别结果保存在 `output/short/` 目录中.
 
 ## 自定义处理
 
@@ -97,21 +96,23 @@ python detect_plate.py --is_video
 
 ## 训练方法
 
-### 车辆识别
+### 检测训练
 
-车辆识别训练链接如下:
+车辆和车牌检测训练链接如下：
 
-[车辆识别训练](https://github.com/we0091234/Car_recognition)
+[车辆和车牌检测训练](https://github.com/we0091234/Car_recognition)
 
-### 车牌处理
+训练配置文件路径为 `data/plateAndCar.yaml`. 将其中的 `train` `val` 路径分别改为训练集、验证集的绝对路径. 
 
-#### 检测训练
+#### 常见问题
 
-车牌检测训练链接如下：
+1. 报与 `np.int` 有关的错误: 将项目目录中所有文件内 `np.int` 替换为 `np.int_`.
+2. `AssertionError: Image Not Found ...`: 将训练集和验证集目录中的 `.cache` 文件删除后, 重新运行训练程序.
+3. `RuntimeError: result type Float can't be cast to the desired output type ...`: 参见[YOLOv5模型训练失败参考修复方案](https://blog.csdn.net/Thebest_jack/article/details/125649451)
+    - 在项目目录中搜索 `for i in range(det.nl)` 或 `for i in range(self.nl)`, 将其下一行的等号左边最后添加 `, shape`, 等号右边最后添加 `, p[i].shape`.
+    - 在项目目录中搜索 `indices.append((b, a, gj.clamp_`, 将该行中的 `gain[3]` `gain[2]` 分别替换为 `shape[2]` `shape[3]`.
 
-[车牌检测训练](https://github.com/we0091234/Chinese_license_plate_detection_recognition/tree/main/readme)
-
-#### 识别训练
+### 识别训练
 
 车牌识别训练链接如下：
 
