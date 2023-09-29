@@ -192,7 +192,7 @@ def draw_result(orgimg,dict_list):
 def get_second(capture):
     if capture.isOpened():
         rate = capture.get(5)   # 帧速率
-        FrameNumber = capture.get(7)  # 视频文件的帧数
+        FrameNumber = capture.get(cv2.CAP_PROP_FRAME_COUNT)  # 视频文件的帧数
         duration = FrameNumber/rate  # 帧速率/视频总帧数 是时间，除以60之后单位是分钟
         return int(rate),int(FrameNumber),int(duration)    
 
