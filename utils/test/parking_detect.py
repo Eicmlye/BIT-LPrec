@@ -191,6 +191,7 @@ def save_key_frame(count: int, roi, frame_no: int, status: int, plate: str, capt
     ret, img = capture.read() # 返回一个布尔值和一个视频帧. 若帧读取成功, 则返回True.
 
     if ret:
+        # 绘制车位位置
         cv2.rectangle(img, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (0, 0, 255), 1)
 
         filename = '_' + plate + '_' + status_list[status] + '.jpg'

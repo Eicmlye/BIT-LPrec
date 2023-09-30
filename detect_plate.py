@@ -462,7 +462,7 @@ if __name__ == '__main__':
                                                                      int(totalfps), stopped_pos_info, 
                                                                      parking_lot_info)
 
-                ori_img, _ = visualize_result(img, dict_list, opt.do_draw)
+                ori_img, _ = visualize_result(img, dict_list, opt.do_draw, opt.is_color)
 
                 t2 = cv2.getTickCount()
                 time_gap = t2 - t1
