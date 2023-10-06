@@ -65,7 +65,7 @@ class carResNet18(nn.Module):
         self.model.averagePool = nn.AvgPool2d((5, 5), stride=1, ceil_mode=True)
         self.cls=nn.Linear(512, num_classes)
 
-    def forward(self,x):
+    def forward(self, x):
         x = self.model.conv1(x)
         x = self.model.bn1(x)
         x = self.model.relu(x)
@@ -84,7 +84,7 @@ class carResNet18(nn.Module):
 if __name__ == '__main__':
     net = carNet(num_classes=2)
     # infeatures = net.cls.in_features
-    # net.cls=nn.Linear(infeatures,2)
+    # net.cls = nn.Linear(infeatures, 2)
     x = torch.FloatTensor(16, 3, 64, 64)
     y = net(x)
     print(y.shape)

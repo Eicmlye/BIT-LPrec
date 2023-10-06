@@ -4,7 +4,6 @@
 直接从原始图像中检测车牌并识别车牌号码等信息. 
 """
 
-import argparse
 import time
 import os
 import cv2
@@ -13,17 +12,17 @@ import copy
 import numpy as np
 
 from utils.transform.region_transform import four_point_transform, scale_coords_landmarks # EM reconstructed
-from utils.io.cv_img import cv_imread, cv_imwrite, cv2ImgAddText # EM reconstructed
+from utils.io.cv_img import cv_imread, cv_imwrite, cv_imaddtext # EM reconstructed
 from utils.io.cmd_cursor import activate_cmd_cursor_opr # EM added
 from utils.io.modify_filename import get_extension_index, control_filename_len # EM added
-from utils.test.parser_arg import show_args # EM added
-from utils.test.load import load_models, choose_device # EM added
+from utils.test.parser import parse_args # EM added
+from utils.test.load import load_models # EM added
 from utils.test.plate_format import rename_special_plate, check_plate_format # EM added
-from utils.test.parking_detect import update_parking_info, save_key_frame # EM added
+from utils.test.parking_detect import update_parking_info, save_action_info # EM added
 from utils.test.video_eta import video_processing_prompt # EM added
 from utils.train.datasets import letterbox
 from utils.general import check_img_size, non_max_suppression_face, scale_coords
-from networks.plate_recognition.plate_rec import get_plate_result, allFilePath
+from networks.plate_recognition.plate_rec import get_plate_result, all_file_path
 from networks.plate_recognition.double_plate_split_merge import get_split_merge
 from networks.car_recognition.car_rec import get_color_and_score
 
@@ -265,7 +264,7 @@ def visualize_result(orgimg, dict_list, do_draw = True, is_color = True):
             car_color_str = result['car_color'] if is_color else ''
 
             if do_draw:
-                orgimg = cv2ImgAddText(orgimg, car_color_str, 
+                orgimg = cv_imaddtext(orgimg, car_color_str, 
                                        rect_area[0], rect_area[1],
                                        (0, 255, 0), height_area)
         else: # plate
@@ -299,7 +298,7 @@ def visualize_result(orgimg, dict_list, do_draw = True, is_color = True):
                                        (255, 255, 255), cv2.FILLED)
                 
                 if len(result) >= 1:
-                    orgimg = cv2ImgAddText(orgimg, plate, rect_area[0], 
+                    orgimg = cv_imaddtext(orgimg, plate, rect_area[0], 
                                            int(rect_area[1] - round(1.6 * labelSize[0][1])), 
                                            (0, 0, 0), 21)
         
@@ -363,28 +362,7 @@ def process_single_image(count, img_path, device, models,
     cv_imwrite(ori_img, save_img_path)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--car_rec_model', type=str, default='weights/car_rec_color.pth', help='车辆识别模型路径, model.pth')
-    parser.add_argument('--detect_model', nargs = '+', type = str, default = 'weights/plate_detect.pt', help = '检测模型路径, model.pt')
-    parser.add_argument('--plate_rec_model', type=str, default='weights/plate_rec_color.pth', help='车牌识别模型路径, model.pth')
-    
-    parser.add_argument('--use_gpu', type=bool, default=None, help="是否使用 GPU, 默认为自动选择")
-    parser.add_argument('--img_size', type=int, default=384, help='需为 32 的倍数. 该参数会影响识别阈值, 提高该参数会使低分目标显示出来')
-
-    parser.add_argument('--is_video', action='store_true', help='处理图片还是视频')
-    parser.add_argument('--do_draw', action='store_true', help='是否绘制识别框')
-    parser.add_argument('--is_color', action='store_true', help='是否识别颜色')
-    
-    parser.add_argument('--image_path', type=str, default='input/imgs/', help='待识别图片(目录)路径')
-    parser.add_argument('--video_path', type=str, default='input/videos/short.mp4', help='待识别视频路径')
-    
-    parser.add_argument('--output', type=str, default=None, help='处理结果保存位置')
-
-    opt = parser.parse_args()
-
-    device, device_choice = choose_device(opt.use_gpu)
-    show_args(opt, device_choice)
+    opt, device = parse_args()
 
     activate_cmd_cursor_opr()
 
@@ -405,16 +383,11 @@ if __name__ == '__main__':
             time_begin = time.time()
 
             file_list = []
-            allFilePath(opt.image_path, file_list) # 将该目录下的所有图片路径读取到 file_list
+            all_file_path(opt.image_path, file_list) # 将该目录下的所有图片路径读取到 file_list
 
             for img_path in file_list: # 遍历图片文件
-                # time_b = time.time() # 开始时间
-
                 process_single_image(count, img_path, device, models,
                                      opt.img_size, opt.is_color, opt.do_draw, save_path)
-                
-                # time_e = time.time()
-                # time_gap = time_e - time_b # 计算单张图片识别耗时
                 count += 1
 
             print(f"处理总用时 {time.time() - time_begin:.2f} s. ")
@@ -474,31 +447,12 @@ if __name__ == '__main__':
         else:
             print("视频加载失败. ")
 
-        print(f"\r\033[1A\033[K\033[1A\033[K\033[1A\033[K共处理 {frame_count} 帧, 平均处理帧速率 {totalFrames / process_time:.2f} fps. ")
+        print(f"\r\033[1A\033[K\033[1A\033[K\033[1A\033[K共处理 {frame_count} 帧, \
+              平均处理帧速率 {totalFrames / process_time:.2f} fps. ")
 
         # 打印订单图片, 保存到 save_path 目录下.
-        print('开始打印订单...', end='\n\n')
-        key_frame_count = 0
-        for parking in parking_lot_info:
-            for getin in parking[1]:
-                if getin[0] > 0:
-                    key_frame_count += 1
-                    save_key_frame(key_frame_count, parking[0], getin[0], 0, getin[1], capture, save_path)
-            for occupy in parking[2]:
-                if occupy[0] > 0:
-                    key_frame_count += 1
-                    save_key_frame(key_frame_count, parking[0], occupy[0], 1, occupy[1], capture, save_path)
-            for getout in parking[3]:
-                if getout[0] > 0:
-                    key_frame_count += 1
-                    save_key_frame(key_frame_count, parking[0], getout[0], 2, getout[1], capture, save_path)
-            for release in parking[4]:
-                if release[0] > 0:
-                    key_frame_count += 1
-                    save_key_frame(key_frame_count, parking[0], release[0], 3, release[1], capture, save_path)
+        save_action_info(parking_lot_info, capture, save_path)
 
         capture.release()
         out.release()
         cv2.destroyAllWindows()
-
-        print('\r\033[1A\033[K\033[1A订单打印完成. \033[K')

@@ -5,23 +5,23 @@ import os
 import time
 import sys
 
-from networks.plate_recognition.plateNet import plateNet_ocr_color
+from networks.plate_recognition.plate_rec_net import plateNet_ocr_color
 
 # device = torch.device('cuda') if torch.cuda.is_available() else torch.device("cpu")
-plateName = r"#京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新学警港澳挂使领民航危0123456789ABCDEFGHJKLMNPQRSTUVWXYZ险品"
+plate_name = r"#京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新学警港澳挂使领民航危0123456789ABCDEFGHJKLMNPQRSTUVWXYZ险品"
 color_list = ['黑色', '蓝色', '绿色', '白色', '黄色']
 mean_value, std_value = (0.588, 0.193)
 
-def allFilePath(rootPath, allFileList):
-    fileList = os.listdir(rootPath)
-    for temp in fileList:
-        if os.path.isfile(os.path.join(rootPath,temp)):
+def all_image_file_path(root_path, all_file_list):
+    file_list = os.listdir(root_path)
+    for temp in file_list:
+        if os.path.isfile(os.path.join(root_path, temp)):
             if temp.endswith('.jpg') or temp.endswith('.png') or temp.endswith('.JPG'):
-                allFileList.append(os.path.join(rootPath,temp))
+                all_file_list.append(os.path.join(root_path, temp))
         else:
-            allFilePath(os.path.join(rootPath,temp), allFileList)
+            all_image_file_path(os.path.join(root_path, temp), all_file_list)
 
-def decodePlate(preds):
+def decode_plate(preds):
     pre = 0
     newPreds = []
     index = []
@@ -56,10 +56,10 @@ def get_plate_result(img, device, model, is_color=False):
     
     preds = preds.view(-1).detach().cpu().numpy()
     color_preds = color_preds.item()
-    newPreds = decodePlate(preds)
+    new_preds = decode_plate(preds)
     plate = ""
-    for i in newPreds[0]: # EM modified. Added '[0]'
-        plate += plateName[i]
+    for i in new_preds[0]: # EM modified. Added '[0]'
+        plate += plate_name[i]
         
     if is_color:
         return plate, color_list[color_preds] # 返回车牌牌号和颜色
@@ -69,11 +69,11 @@ def get_plate_result(img, device, model, is_color=False):
 def init_plate_rec_model(model_path, device):
     # print( print(sys.path))
     # model_path ="plate_recognition/model/checkpoint_61_acc_0.9715.pth"
-    check_point = torch.load(model_path,map_location=device)
-    model_state=check_point['state_dict']
-    cfg=check_point['cfg']
+    check_point = torch.load(model_path, map_location=device)
+    model_state = check_point['state_dict']
+    cfg = check_point['cfg']
     model_path = os.sep.join([sys.path[0],model_path])
-    model = plateNet_ocr_color(num_classes=len(plateName), export=True, 
+    model = plateNet_ocr_color(num_classes=len(plate_name), export=True, 
                                cfg=cfg, color_num=len(color_list))
    
     model.load_state_dict(model_state)
@@ -87,7 +87,7 @@ if __name__ == '__main__':
    image_path = "images/tmp2424.png"
    testPath = r"/mnt/Gpan/Mydata/pytorchPorject/CRNN/crnn_plate_recognition/images"
    fileList = []
-   allFilePath(testPath, fileList)
+   all_image_file_path(testPath, fileList)
 
    is_color = False
    model = init_plate_rec_model(device, model_path)

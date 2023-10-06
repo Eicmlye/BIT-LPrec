@@ -3,7 +3,6 @@
 """
 
 import torch
-import os
 import sys
 
 from argparse import Namespace

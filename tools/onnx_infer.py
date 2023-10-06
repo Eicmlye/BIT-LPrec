@@ -7,31 +7,33 @@ import argparse
 from utils.transform.region_transform import four_point_transform
 from PIL import Image, ImageDraw, ImageFont
 import time
-from utils.io.cv_img import cv_imread, cv2ImgAddText # EM reconstructed
 
-plate_color_list=['黑色','蓝色','绿色','白色','黄色']
-plateName=r"#京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新学警港澳挂使领民航危0123456789ABCDEFGHJKLMNPQRSTUVWXYZ险品"
-mean_value,std_value=((0.588,0.193))#识别模型均值标准差
+from utils.io.cv_img import cv_imread, cv_imaddtext # EM reconstructed
+from networks.car_recognition.car_rec import all_file_path
 
-def decodePlate(preds):        #识别后处理
-    pre=0
-    newPreds=[]
+plate_color_list = ['黑色', '蓝色', '绿色', '白色', '黄色']
+plate_name = r"#京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新学警港澳挂使领民航危0123456789ABCDEFGHJKLMNPQRSTUVWXYZ险品"
+mean_value, std_value = ((0.588,0.193)) # 识别模型均值标准差
+
+def decode_plate(preds): # 识别后处理
+    pre = 0
+    newPreds = []
     for i in range(len(preds)):
-        if preds[i]!=0 and preds[i]!=pre:
+        if preds[i] != 0 and preds[i] != pre:
             newPreds.append(preds[i])
-        pre=preds[i]
-    plate=""
+        pre = preds[i]
+    plate = ""
     for i in newPreds:
-        plate+=plateName[int(i)]
+        plate += plate_name[int(i)]
     return plate
     # return newPreds
 
-def rec_pre_precessing(img,size=(48,168)): #识别前处理
-    img =cv2.resize(img,(168,48))
+def rec_pre_precessing(img, size=(48,168)): #识别前处理
+    img =cv2.resize(img,(168, 48))
     img = img.astype(np.float32)
-    img = (img/255-mean_value)/std_value  #归一化 减均值 除标准差
-    img = img.transpose(2,0,1)         #h,w,c 转为 c,h,w
-    img = img.reshape(1,*img.shape)    #channel,height,width转为batch,channel,height,channel
+    img = (img / 255  -mean_value) / std_value  #归一化 减均值 除标准差
+    img = img.transpose(2, 0, 1)         #h,w,c 转为 c,h,w
+    img = img.reshape(1, *img.shape)    #channel,height,width转为batch,channel,height,channel
     return img
 
 def get_plate_result(img,session_rec): #识别后处理
@@ -41,17 +43,8 @@ def get_plate_result(img,session_rec): #识别后处理
     index_color = np.argmax(y_onnx_color)
     plate_color = plate_color_list[index_color]
     # print(y_onnx[0])
-    plate_no = decodePlate(index[0])
+    plate_no = decode_plate(index[0])
     return plate_no,plate_color
-
-
-def allFilePath(rootPath,allFIleList):  #遍历文件
-    fileList = os.listdir(rootPath)
-    for temp in fileList:
-        if os.path.isfile(os.path.join(rootPath,temp)):
-            allFIleList.append(os.path.join(rootPath,temp))
-        else:
-            allFilePath(os.path.join(rootPath,temp),allFIleList)
 
 def get_split_merge(img):  #双层车牌进行分割后识别
     h,w,c = img.shape
@@ -82,7 +75,7 @@ def xywh2xyxy(boxes):   #xywh坐标变为 左上 ，右下坐标 x1,y1  x2,y2
     xywh[:,3]=boxes[:,1]+boxes[:,3]/2
     return xywh
  
-def my_nms(boxes,iou_thresh):         #nms
+def my_nms(boxes,iou_thresh): # nms
     index = np.argsort(boxes[:,4])[::-1]
     keep = []
     while index.size >0:
@@ -103,7 +96,7 @@ def my_nms(boxes,iou_thresh):         #nms
         index = index[idx+1]
     return keep
 
-def restore_box(boxes,r,left,top):  #返回原图上面的坐标
+def restore_box(boxes,r,left,top): # 返回原图上面的坐标
     boxes[:,[0,2,5,7,9,11]]-=left
     boxes[:,[1,3,6,8,10,12]]-=top
 
@@ -111,7 +104,7 @@ def restore_box(boxes,r,left,top):  #返回原图上面的坐标
     boxes[:,[1,3,6,8,10,12]]/=r
     return boxes
 
-def detect_pre_precessing(img,img_size):  #检测前处理
+def detect_pre_precessing(img,img_size): # 检测前处理
     img,r,left,top=my_letter_box(img,img_size)
     # cv2.imwrite("1.jpg",img)
     img =img[:,:,::-1].transpose(2,0,1).copy().astype(np.float32)
@@ -119,7 +112,7 @@ def detect_pre_precessing(img,img_size):  #检测前处理
     img=img.reshape(1,*img.shape)
     return img,r,left,top
 
-def post_precessing(dets,r,left,top,conf_thresh=0.3,iou_thresh=0.5):#检测后处理
+def post_precessing(dets,r,left,top,conf_thresh=0.3,iou_thresh=0.5): # 检测后处理
     choice = dets[:,:,4]>conf_thresh
     dets=dets[choice]
     dets[:,13:15]*=dets[:,4:5]
@@ -133,7 +126,7 @@ def post_precessing(dets,r,left,top,conf_thresh=0.3,iou_thresh=0.5):#检测后�
     output = restore_box(output,r,left,top)
     return output
 
-def rec_plate(outputs,img0,session_rec):  #识别车牌
+def rec_plate(outputs,img0,session_rec): # 识别车牌
     dict_list=[]
     for output in outputs:
         result_dict={}
@@ -142,7 +135,7 @@ def rec_plate(outputs,img0,session_rec):  #识别车牌
         roi_img = four_point_transform(img0,land_marks)
         label = int(output[-1])
         score = output[4]
-        if label==1:  #代表是双层车牌
+        if label==1: # 代表是双层车牌
             roi_img = get_split_merge(roi_img)
         plate_no,plate_color = get_plate_result(roi_img,session_rec)
         result_dict['rect']=rect
@@ -170,25 +163,25 @@ def draw_result(orgimg,dict_list):
         landmarks=result['landmarks']
         result = result['plate_no']
         result_str+=result+" "
-        for i in range(4):  #关键点
+        for i in range(4): # 关键点
             cv2.circle(orgimg, (int(landmarks[i][0]), int(landmarks[i][1])), 5, clors[i], -1)
         cv2.rectangle(orgimg,(rect_area[0],rect_area[1]),(rect_area[2],rect_area[3]),(255,255,0),2) #画框
         if len(result)>=1:
-            orgimg=cv2ImgAddText(orgimg,result,rect_area[0]-height_area,rect_area[1]-height_area-10,(0,255,0),height_area)
+            orgimg=cv_imaddtext(orgimg,result,rect_area[0]-height_area,rect_area[1]-height_area-10,(0,255,0),height_area)
     print(result_str)
     return orgimg
 
 if __name__ == "__main__":
     begin = time.time()
     parser = argparse.ArgumentParser()
-    parser.add_argument('--detect_model',type=str, default=r'weights/plate_detect.onnx', help='model.pt path(s)')  #检测模型
-    parser.add_argument('--rec_model', type=str, default='weights/plate_rec_color.onnx', help='model.pt path(s)')#识别模型
+    parser.add_argument('--detect_model',type=str, default=r'weights/plate_detect.onnx', help='model.pt path(s)') # 检测模型
+    parser.add_argument('--rec_model', type=str, default='weights/plate_rec_color.onnx', help='model.pt path(s)') # 识别模型
     parser.add_argument('--image_path', type=str, default='imgs', help='source') 
     parser.add_argument('--img_size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--output', type=str, default='result1', help='source') 
     opt = parser.parse_args()
     file_list = []
-    allFilePath(opt.image_path,file_list)
+    all_file_path(opt.image_path,file_list)
     providers =  ['CPUExecutionProvider']
     clors = [(255,0,0),(0,255,0),(0,0,255),(255,255,0),(0,255,255)]
     img_size = (opt.img_size,opt.img_size)
@@ -203,10 +196,10 @@ if __name__ == "__main__":
         print(count,pic_,end=" ")
         img=cv_imread(pic_)
         img0 = copy.deepcopy(img)
-        img,r,left,top = detect_pre_precessing(img,img_size) #检测前处理
+        img,r,left,top = detect_pre_precessing(img,img_size) # 检测前处理
         # print(img.shape)
         y_onnx = session_detect.run([session_detect.get_outputs()[0].name], {session_detect.get_inputs()[0].name: img})[0]
-        outputs = post_precessing(y_onnx,r,left,top) #检测后处理
+        outputs = post_precessing(y_onnx,r,left,top) # 检测后处理
         result_list=rec_plate(outputs,img0,session_rec)
         ori_img = draw_result(img0,result_list)
         img_name = os.path.basename(pic_)

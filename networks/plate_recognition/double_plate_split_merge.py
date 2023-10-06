@@ -11,7 +11,7 @@ def get_split_merge(img):
     
     return new_img
 
-if __name__=="__main__":
+if __name__ == "__main__":
     img = cv_imread("double_plate/tmp8078.png")
-    new_img =get_split_merge(img)
-    cv2.imwrite("double_plate/new.jpg",new_img)
+    new_img = get_split_merge(img)
+    cv2.imwrite("double_plate/new.jpg", new_img)

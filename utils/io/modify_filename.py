@@ -10,7 +10,13 @@ def get_extension_index(filename: str):
         if filename[rev_ind] == '.':
             return rev_ind
         
+    raise RuntimeError("No extension found. ")
+        
 def control_filename_len(path: str, maxlen: int = 20):
+    """
+    将文件名字符串的长度控制在一定范围内, 若超长则省略中间的部分内容. 
+    """
+    
     if (maxlen <= 10):
         print("Control length too short (lower than 11). ")
         return path
