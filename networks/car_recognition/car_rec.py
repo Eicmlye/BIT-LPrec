@@ -2,9 +2,11 @@ from networks.car_recognition.car_rec_net import carNet
 import torch
 import cv2
 import torch.nn.functional as F
-import os
 
-colors = ['黑色','蓝色','黄色','棕色','绿色','灰色','橙色','粉色','紫色','红色','白色']
+from utils.io.strmod import get_all_file_path
+
+colors = ['黑色', '蓝色', '黄色', '棕色', '绿色',
+          '灰色', '橙色', '粉色', '紫色', '红色', '白色']
 
 def init_car_rec_model(model_path, device):
     check_point = torch.load(model_path)
@@ -23,14 +25,6 @@ def image_processing(img, device):
     img = img.unsqueeze(0)
 
     return img
-    
-def all_file_path(root_path, all_file_list):
-    file_list = os.listdir(root_path)
-    for temp in file_list:
-        if os.path.isfile(os.path.join(root_path, temp)):
-            all_file_list.append(os.path.join(root_path, temp))
-        else:
-            all_file_path(os.path.join(root_path, temp), all_file_list)
 
 def get_color_and_score(model, img, device):
     img = image_processing(img, device)
@@ -43,13 +37,12 @@ def get_color_and_score(model, img, device):
     color_conf = out[predicted]
     
     return  car_color, color_conf
-    
 
 if __name__ == '__main__':
     # root_file = r"/mnt/Gpan/BaiduNetdiskDownload/VehicleColour/VehicleColour/class/7"
     root_file = r"imgs"
     file_list = []
-    all_file_path(root_file, file_list)
+    get_all_file_path(root_file, file_list)
     device = torch.device("cuda" if torch.cuda.is_available else "cpu")
     model_path = r"/mnt/Gpan/Mydata/pytorchPorject/Car_system/car_color/color_model/0.8682285244554049_epoth_117_model.pth"
     model = init_car_rec_model(model_path,device)

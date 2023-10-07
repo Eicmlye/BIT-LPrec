@@ -5,11 +5,10 @@ import copy
 import os
 import argparse
 from utils.transform.region_transform import four_point_transform
-from PIL import Image, ImageDraw, ImageFont
 import time
 
 from utils.io.cv_img import cv_imread, cv_imaddtext # EM reconstructed
-from networks.car_recognition.car_rec import all_file_path
+from utils.io.strmod import get_all_file_path
 
 plate_color_list = ['黑色', '蓝色', '绿色', '白色', '黄色']
 plate_name = r"#京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新学警港澳挂使领民航危0123456789ABCDEFGHJKLMNPQRSTUVWXYZ险品"
@@ -181,7 +180,7 @@ if __name__ == "__main__":
     parser.add_argument('--output', type=str, default='result1', help='source') 
     opt = parser.parse_args()
     file_list = []
-    all_file_path(opt.image_path,file_list)
+    get_all_file_path(opt.image_path,file_list)
     providers =  ['CPUExecutionProvider']
     clors = [(255,0,0),(0,255,0),(0,0,255),(255,255,0),(0,255,255)]
     img_size = (opt.img_size,opt.img_size)

@@ -4,15 +4,7 @@ import numpy as np
 
 from utils.io.cv_img import cv_imread # EM reconstructed
 from utils.transform.region_transform import order_points # EM reconstructed
-
-def allJPGFilePath(rootPath, allFileList):
-    fileList = os.listdir(rootPath)
-    for temp in fileList:
-        if os.path.isfile(os.path.join(rootPath, temp)):
-            if temp.endswith(".jpg"):
-                allFileList.append(os.path.join(rootPath, temp))
-        else:
-            allJPGFilePath(os.path.join(rootPath, temp), allFileList)
+from utils.io.strmod import get_all_file_path
 
 def get_partical_ccpd():
     ccpd_dir = r"/mnt/Gpan/BaiduNetdiskDownload/CCPD1/CCPD2020/ccpd_green"
@@ -131,8 +123,8 @@ def write_lable(file_path):
 if __name__ == '__main__':
    file_root = r"ccpd"
    file_list=[]
-   count=0
-   allJPGFilePath(file_root, file_list)
+   count = 0
+   get_all_file_path(file_root, file_list, ['.jpg'])
    for img_path in file_list:
         count += 1
         # img_path = r"ccpd_yolo_test/02-90_85-173&466_452&541-452&553_176&556_178&463_454&460-0_0_6_26_15_26_32-68-53.jpg"
@@ -152,7 +144,7 @@ if __name__ == '__main__':
     # get_partical_ccpd()
     # file_root = r"ccpd/green_plate"
     # file_list=[]
-    # allJPGFilePath(file_root,file_list)
+    # get_all_file_path(file_root, file_list, ['.jpg'])
     # count=0
     # for img_path in file_list:
     #     img_name = img_path.split(os.sep)[-1]

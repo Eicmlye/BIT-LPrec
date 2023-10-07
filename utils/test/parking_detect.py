@@ -188,7 +188,7 @@ def save_key_frame(count: int, roi, frame_no: int, status: int, plate: str, capt
 
     status_list = ['驶入', '占用', '驶出', '空车位']
     capture.set(cv2.CAP_PROP_POS_FRAMES, frame_no) # 设置要获取的帧号
-    ret, img = capture.read() # 返回一个布尔值和一个视频帧. 若帧读取成功, 则返回True.
+    ret, img = capture.read() # 返回一个布尔值和一个视频帧. 若帧读取成功, 则返回 True.
 
     if ret:
         # 绘制车位位置

@@ -8,7 +8,7 @@ import argparse
 
 from utils.transform.region_transform import four_point_transform
 from utils.io.cv_img import cv_imread, cv_imaddtext # EM reconstructed
-from networks.car_recognition.car_rec import all_file_path
+from utils.io.strmod import get_all_file_path
 
 def cv_imread(path):
     img=cv2.imdecode(np.fromfile(path,dtype=np.uint8),-1)
@@ -197,7 +197,7 @@ if __name__=="__main__":
     opt = parser.parse_args()
     file_list=[]
     file_folder=opt.image_path
-    all_file_path(file_folder,file_list)
+    get_all_file_path(file_folder,file_list)
     rec_onnx_path =opt.rec_model
     detect_onnx_path=opt.detect_model
     rec_model,rec_output=load_model(rec_onnx_path)
