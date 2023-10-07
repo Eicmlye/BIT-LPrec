@@ -1,4 +1,5 @@
 import os
+import time
 
 class OutputItem:
     """
@@ -120,6 +121,52 @@ class FilenameModifier:
         self.output_list.standard_image_filename(fileindex, rec_result)
         
         return
+
+
+class Timer:
+    """
+    计时器. 
+    """
+
+    def __init__(self):
+        self._time = time.time()
+
+    def refresh(self):
+        """
+        刷新时间戳
+        """
+        
+        self._time = time.time()
+
+    def gap(self):
+        """
+        刷新时间戳, 并返回距离上次时间戳的时差.
+        """
+        
+        prev_time = self._time
+        self.refresh()
+
+        return self._time - prev_time
+    
+class Counter:
+    """
+    计数器. 
+    """
+
+    def __init__(self):
+        self.count = 0
+
+    def inc(self):
+        self.count += 1
+
+class CmdPrompt:
+    """
+    发送命令行提示. 
+    """
+
+    def __init__(self):
+        self.timer = Timer()
+
 
 def get_all_file_path(root_path: str, all_file_list: list[str], extension: list[str] = None):
     """
