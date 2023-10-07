@@ -39,7 +39,7 @@ def image_processing(img, device):
     img = img.view(1, *img.size())
     return img
 
-def get_plate_result(img, device, model, is_color=False):
+def get_plate_result(img, device, model):
     input = image_processing(img, device)
     
     preds, color_preds = model(input)
@@ -53,10 +53,7 @@ def get_plate_result(img, device, model, is_color=False):
     for i in new_preds[0]: # EM modified. Added '[0]'
         plate += plate_name[i]
         
-    if is_color:
-        return plate, color_list[color_preds] # 返回车牌牌号和颜色
-    else:
-        return plate
+    return plate, color_list[color_preds] # 返回车牌牌号和颜色
     
 def init_plate_rec_model(model_path, device):
     # print( print(sys.path))
