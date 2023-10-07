@@ -188,12 +188,37 @@ def save_key_frame(count: int, roi, frame_no: int, status: int, plate: str, capt
 
     status_list = ['驶入', '占用', '驶出', '空车位']
     capture.set(cv2.CAP_PROP_POS_FRAMES, frame_no) # 设置要获取的帧号
-    ret, img = capture.read() # 返回一个布尔值和一个视频帧. 若帧读取成功, 则返回True.
+    ret, img = capture.read() # 返回一个布尔值和一个视频帧. 若帧读取成功, 则返回 True.
 
     if ret:
+        # 绘制车位位置
         cv2.rectangle(img, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (0, 0, 255), 1)
 
         filename = '_' + plate + '_' + status_list[status] + '.jpg'
         output_path = os.path.join(save_path, filename)
         cv_imwrite(img, output_path)
         print(f"\r\033[1A{count}\t已打印订单 " + filename + "\033[K")
+
+def save_action_info(parking_lot_info, capture: cv2.VideoCapture, save_path: str):
+    print('开始打印订单...', end='\n\n')
+
+    key_frame_count = 0
+    for parking in parking_lot_info:
+        for getin in parking[1]:
+            if getin[0] > 0:
+                key_frame_count += 1
+                save_key_frame(key_frame_count, parking[0], getin[0], 0, getin[1], capture, save_path)
+        for occupy in parking[2]:
+            if occupy[0] > 0:
+                key_frame_count += 1
+                save_key_frame(key_frame_count, parking[0], occupy[0], 1, occupy[1], capture, save_path)
+        for getout in parking[3]:
+            if getout[0] > 0:
+                key_frame_count += 1
+                save_key_frame(key_frame_count, parking[0], getout[0], 2, getout[1], capture, save_path)
+        for release in parking[4]:
+            if release[0] > 0:
+                key_frame_count += 1
+                save_key_frame(key_frame_count, parking[0], release[0], 3, release[1], capture, save_path)
+
+    print('\r\033[1A\033[K\033[1A订单打印完成. \033[K')

@@ -6,16 +6,16 @@ class plateNet_ocr(nn.Module):
     def __init__(self, cfg=None, num_classes=78, export=False):
         super(plateNet_ocr, self).__init__()
         if cfg is None:
-            cfg =[32, 32, 64, 64, 'M', 128, 128, 'M', 196, 196, 'M', 256, 256]
-            # cfg =[32,32,'M',64,64,'M',128,128,'M',256,256]
+            cfg = [32, 32, 64, 64, 'M', 128, 128, 'M', 196, 196, 'M', 256, 256]
+            # cfg = [32,32,'M',64,64,'M',128,128,'M',256,256]
         self.feature = self.make_layers(cfg, True)
         self.export = export
         # self.classifier = nn.Linear(cfg[-1], num_classes)
-        # self.loc =  nn.MaxPool2d((2, 2), (5, 1), (0, 1),ceil_mode=True)
-        # self.loc =  nn.AvgPool2d((2, 2), (5, 2), (0, 1),ceil_mode=False)
+        # self.loc =  nn.MaxPool2d((2, 2), (5, 1), (0, 1), ceil_mode=True)
+        # self.loc =  nn.AvgPool2d((2, 2), (5, 2), (0, 1), ceil_mode=False)
         self.loc = nn.MaxPool2d((5, 2), (1, 1), (0, 1), ceil_mode=False)
         self.newCnn = nn.Conv2d(cfg[-1], num_classes, 1, 1)
-        # self.newBn=nn.BatchNorm2d(num_classes)
+        # self.newBn = nn.BatchNorm2d(num_classes)
     def make_layers(self, cfg, batch_norm=False):
         layers = []
         in_channels = 3
@@ -43,11 +43,11 @@ class plateNet_ocr(nn.Module):
         x = self.feature(x)
         x = self.loc(x)
         x = self.newCnn(x)
-        # x=self.newBn(x)
+        # x = self.newBn(x)
         if self.export:
-            conv = x.squeeze(2) # b *512 * width
-            conv = conv.transpose(2,1)  # [w, b, c]
-            # conv =conv.argmax(dim=2)
+            conv = x.squeeze(2) # b * 512 * width
+            conv = conv.transpose(2, 1)  # [w, b, c]
+            # conv = conv.argmax(dim=2)
             return conv
         else:
             b, c, h, w = x.size()
@@ -60,7 +60,7 @@ class plateNet_ocr(nn.Module):
 
 myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 256]
 class plateNet(nn.Module):
-    def __init__(self,cfg=None,num_classes=3):
+    def __init__(self, cfg=None, num_classes=3):
         super(plateNet, self).__init__()
         if cfg is None:
             cfg = myCfg
@@ -101,7 +101,7 @@ class plateNet_color(nn.Module):
         super(plateNet_color, self).__init__()
         self.class_num = class_num
         self.backbone = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=16, kernel_size=(5, 5), stride=(1, 1)),  # 0
+            nn.Conv2d(in_channels=3, out_channels=16, kernel_size=(5, 5), stride=(1, 1)), # 0
             torch.nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(2, 2)),
@@ -126,11 +126,11 @@ class plateNet_ocr_color(nn.Module):
         super(plateNet_ocr_color, self).__init__()
         if cfg is None:
             cfg =[32, 32, 64, 64, 'M', 128, 128, 'M', 196, 196, 'M', 256, 256]
-            # cfg =[32,32,'M',64,64,'M',128,128,'M',256,256]
+            # cfg =[32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 256, 256]
         self.feature = self.make_layers(cfg, True)
         self.export = export
         self.color_num = color_num
-        self.conv_out_num = 12 # 颜色第一个卷积层输出通道12
+        self.conv_out_num = 12 # 颜色第一个卷积层输出通道 12
         if self.color_num:
             self.conv1 = nn.Conv2d(cfg[-1], self.conv_out_num, kernel_size=3, stride=2)
             self.bn1 = nn.BatchNorm2d(self.conv_out_num)
@@ -141,7 +141,7 @@ class plateNet_ocr_color(nn.Module):
             self.flatten = nn.Flatten()
         self.loc = nn.MaxPool2d((5, 2), (1, 1), (0,1), ceil_mode=False)
         self.newCnn = nn.Conv2d(cfg[-1], num_classes, 1, 1)
-        # self.newBn=nn.BatchNorm2d(num_classes)
+        # self.newBn = nn.BatchNorm2d(num_classes)
     def make_layers(self, cfg, batch_norm=False):
         layers = []
         in_channels = 3
@@ -170,7 +170,7 @@ class plateNet_ocr_color(nn.Module):
         if self.color_num:
             x_color = self.conv1(x)
             x_color = self.bn1(x_color)
-            x_color =self.relu1(x_color)
+            x_color = self.relu1(x_color)
             x_color = self.color_classifier(x_color)
             x_color = self.color_bn(x_color)
             x_color = self.gap(x_color)
@@ -179,15 +179,15 @@ class plateNet_ocr_color(nn.Module):
         x = self.newCnn(x)
        
         if self.export:
-            conv = x.squeeze(2) # b *512 * width
-            conv = conv.transpose(2,1)  # [w, b, c]
+            conv = x.squeeze(2) # b * 512 * width
+            conv = conv.transpose(2, 1) # [w, b, c]
             if self.color_num:
                 return conv, x_color
             return conv
         else:
             b, c, h, w = x.size()
             assert h == 1, "the height of conv must be 1"
-            conv = x.squeeze(2) # b *512 * width
+            conv = x.squeeze(2) # b * 512 * width
             conv = conv.permute(2, 0, 1)  # [w, b, c]
             output = F.log_softmax(conv, dim=2)
             if self.color_num:

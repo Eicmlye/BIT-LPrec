@@ -1,27 +1,18 @@
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 from openvino.runtime import Core
 import os
 import time
 import copy
-from utils.transform.region_transform import four_point_transform
-from PIL import Image, ImageDraw, ImageFont
 import argparse
-from utils.io.cv_img import cv_imread, cv2ImgAddText # EM reconstructed
+
+from utils.transform.region_transform import four_point_transform
+from utils.io.cv_img import cv_imread, cv_imaddtext # EM reconstructed
+from utils.io.strmod import get_all_file_path
 
 def cv_imread(path):
     img=cv2.imdecode(np.fromfile(path,dtype=np.uint8),-1)
     return img
-
-def allFilePath(rootPath,allFIleList):
-    fileList = os.listdir(rootPath)
-    for temp in fileList:
-        if os.path.isfile(os.path.join(rootPath,temp)):
-            # if temp.endswith("jpg"):
-            allFIleList.append(os.path.join(rootPath,temp))
-        else:
-            allFilePath(os.path.join(rootPath,temp),allFIleList)
 
 mean_value,std_value=((0.588,0.193)) # 识别模型均值标准差
 plateName=r"#京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新学警港澳挂使领民航危0123456789ABCDEFGHJKLMNPQRSTUVWXYZ险品"
@@ -34,7 +25,7 @@ def rec_pre_precessing(img,size=(48,168)): # 识别前处理
     img = img.reshape(1,*img.shape)
     return img
 
-def decodePlate(preds): # 识别后处理
+def decode_plate(preds): # 识别后处理
     pre=0
     newPreds=[]
     preds=preds.astype(np.int8)[0]
@@ -60,7 +51,7 @@ def get_plate_result(img,rec_model,rec_output):
     res_onnx = rec_model([img])[rec_output]
     # time_e= time.time()
     index =np.argmax(res_onnx,axis=-1)  #找出最大概率的那个字符的序号
-    plate_no = decodePlate(index)
+    plate_no = decode_plate(index)
     # print(f'{plate_no},time is {time_e-time_b}')
     return plate_no
 
@@ -185,7 +176,7 @@ def draw_result(orgimg,dict_list):
         
         if len(result)>=6:
             cv2.rectangle(orgimg,(rect_area[0],rect_area[1]),(rect_area[2],rect_area[3]),(0,0,255),2) #画框
-            orgimg=cv2ImgAddText(orgimg,result,rect_area[0]-height_area,rect_area[1]-height_area-10,(0,255,0),height_area)
+            orgimg=cv_imaddtext(orgimg,result,rect_area[0]-height_area,rect_area[1]-height_area-10,(0,255,0),height_area)
     # print(result_str)
     return orgimg
 
@@ -206,7 +197,7 @@ if __name__=="__main__":
     opt = parser.parse_args()
     file_list=[]
     file_folder=opt.image_path
-    allFilePath(file_folder,file_list)
+    get_all_file_path(file_folder,file_list)
     rec_onnx_path =opt.rec_model
     detect_onnx_path=opt.detect_model
     rec_model,rec_output=load_model(rec_onnx_path)

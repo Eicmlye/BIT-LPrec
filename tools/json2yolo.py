@@ -2,15 +2,9 @@ import json
 import os
 import numpy as np
 from copy import deepcopy
-from utils.io.cv_img import cv_imread # EM reconstructed
 
-def allFilePath(rootPath,allFIleList):
-    fileList = os.listdir(rootPath)
-    for temp in fileList:
-        if os.path.isfile(os.path.join(rootPath,temp)):
-            allFIleList.append(os.path.join(rootPath,temp))
-        else:
-            allFilePath(os.path.join(rootPath,temp),allFIleList)
+from utils.io.cv_img import cv_imread # EM reconstructed
+from utils.io.strmod import get_all_file_path
 
 def xywh2yolo(rect,landmarks_sort,img):
     h,w,c =img.shape
@@ -41,7 +35,7 @@ if __name__ == "__main__":
     pic_file = r"./traindata/jsontmp/"
     save_small_path = "small"
     label_file = ['0','1']
-    allFilePath(pic_file,pic_file_list)
+    get_all_file_path(pic_file,pic_file_list)
     count=0
     index = 0
     for pic_ in pic_file_list:

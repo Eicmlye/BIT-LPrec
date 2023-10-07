@@ -59,10 +59,8 @@
 
 ### 图片识别测试
 
-直接运行 `detect_plate.py`, 或在本项目根目录下运行如下命令行
-
 ```
-python detect_plate.py
+python main.py
 ```
 
 测试图片目录为 `input/imgs/`，图片识别结果保存在 `output/`.
@@ -70,7 +68,7 @@ python detect_plate.py
 ### 视频识别测试  
 
 ```
-python detect_plate.py --is_video
+python main.py --is_video
 ```
 
 测试视频为 `input/videos/short.mp4`, 视频识别结果保存在 `output/short/` 目录中.
@@ -79,7 +77,7 @@ python detect_plate.py --is_video
 
 ### 参数解释
 
-`detect_plate.py` 包含了项目的主函数. 
+`main.py` 包含了项目的主函数. 
 
 | 参数 | 定义 | 用法 |
 | --- | --- | --- |
