@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 class plateNet_ocr(nn.Module):
-    def __init__(self, cfg=None, num_classes=78, export=False):
+    def __init__(self, cfg: list = None, num_classes: int = 78, export: bool = False):
         super(plateNet_ocr, self).__init__()
         if cfg is None:
             cfg = [32, 32, 64, 64, 'M', 128, 128, 'M', 196, 196, 'M', 256, 256]
@@ -16,7 +16,7 @@ class plateNet_ocr(nn.Module):
         self.loc = nn.MaxPool2d((5, 2), (1, 1), (0, 1), ceil_mode=False)
         self.newCnn = nn.Conv2d(cfg[-1], num_classes, 1, 1)
         # self.newBn = nn.BatchNorm2d(num_classes)
-    def make_layers(self, cfg, batch_norm=False):
+    def make_layers(self, cfg: list, batch_norm : bool = False):
         layers = []
         in_channels = 3
         for i in range(len(cfg)):
@@ -39,7 +39,7 @@ class plateNet_ocr(nn.Module):
                     in_channels = cfg[i]
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         x = self.feature(x)
         x = self.loc(x)
         x = self.newCnn(x)
@@ -60,13 +60,13 @@ class plateNet_ocr(nn.Module):
 
 myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 256]
 class plateNet(nn.Module):
-    def __init__(self, cfg=None, num_classes=3):
+    def __init__(self, cfg: list = None, num_classes: int = 3):
         super(plateNet, self).__init__()
         if cfg is None:
             cfg = myCfg
         self.feature = self.make_layers(cfg, True)
         self.classifier = nn.Linear(cfg[-1], num_classes)
-    def make_layers(self, cfg, batch_norm=False):
+    def make_layers(self, cfg: list, batch_norm: bool = False):
         layers = []
         in_channels = 3
         for i in range(len(cfg)):
@@ -89,7 +89,7 @@ class plateNet(nn.Module):
                     in_channels = cfg[i]
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         x = self.feature(x)
         x = nn.AvgPool2d(kernel_size=3, stride=1)(x)
         x = x.view(x.size(0), -1)
@@ -97,7 +97,7 @@ class plateNet(nn.Module):
         return y
     
 class plateNet_color(nn.Module):
-    def __init__(self, class_num=6):
+    def __init__(self, class_num: int = 6):
         super(plateNet_color, self).__init__()
         self.class_num = class_num
         self.backbone = nn.Sequential(
@@ -115,14 +115,14 @@ class plateNet_color(nn.Module):
             nn.Softmax(1)
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         logits = self.backbone(x)
 
         return logits
 
 
 class plateNet_ocr_color(nn.Module):
-    def __init__(self, cfg=None, num_classes=78, export=False, color_num=None):
+    def __init__(self, cfg: list = None, num_classes: int = 78, export: bool = False, color_num: int = None):
         super(plateNet_ocr_color, self).__init__()
         if cfg is None:
             cfg =[32, 32, 64, 64, 'M', 128, 128, 'M', 196, 196, 'M', 256, 256]
@@ -142,7 +142,7 @@ class plateNet_ocr_color(nn.Module):
         self.loc = nn.MaxPool2d((5, 2), (1, 1), (0,1), ceil_mode=False)
         self.newCnn = nn.Conv2d(cfg[-1], num_classes, 1, 1)
         # self.newBn = nn.BatchNorm2d(num_classes)
-    def make_layers(self, cfg, batch_norm=False):
+    def make_layers(self, cfg: list, batch_norm: bool = False):
         layers = []
         in_channels = 3
         for i in range(len(cfg)):
@@ -165,7 +165,7 @@ class plateNet_ocr_color(nn.Module):
                     in_channels = cfg[i]
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         x = self.feature(x)
         if self.color_num:
             x_color = self.conv1(x)

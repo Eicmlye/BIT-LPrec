@@ -4,11 +4,9 @@ import math
 import os
 import random
 import shutil
-import time
 from itertools import repeat
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from threading import Thread
 
 import cv2
 import numpy as np
@@ -17,10 +15,10 @@ from PIL import Image, ExifTags
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from utils.general import xyxy2xywh, xywh2xyxy, clean_str
+from utils.general import xyxy2xywh, xywh2xyxy
 from utils.torch_utils import torch_distributed_zero_first
 
-from utils.io.cv_img import cv_imread # EM reconstructed
+from utils.formatter.cv_img import cv_imread
 
 # Parameters
 help_url = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'

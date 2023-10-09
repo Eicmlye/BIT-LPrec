@@ -11,12 +11,13 @@ import torch.nn as nn
 sys.path.append('./')  # to run '$ python *.py' files in subdirectories
 logger = logging.getLogger(__name__)
 
-from models.common import Conv, Bottleneck, SPP, DWConv, Focus, BottleneckCSP, C3, ShuffleV2Block, Concat, NMS, autoShape, StemBlock, BlazeBlock, DoubleBlazeBlock
+from models.common import Conv, Bottleneck, SPP, DWConv, Focus, BottleneckCSP, C3,\
+    ShuffleV2Block, Concat, NMS, autoShape, StemBlock, BlazeBlock, DoubleBlazeBlock
 from models.experimental import MixConv2d, CrossConv
 from utils.train.autoanchor import check_anchor_order
 from utils.general import make_divisible, check_file, set_logging
-from utils.torch_utils import time_synchronized, fuse_conv_and_bn, model_info, scale_img, initialize_weights, \
-    select_device, copy_attr
+from utils.torch_utils import time_synchronized, fuse_conv_and_bn, model_info,\
+    scale_img, initialize_weights, select_device, copy_attr
 
 try:
     import thop  # for FLOPS computation
@@ -228,7 +229,7 @@ class Model(nn.Module):
     #             print('%10.3g' % (m.w.detach().sigmoid() * 2))  # shortcut weights
 
     def fuse(self):  # fuse model Conv2d() + BatchNorm2d() layers
-        print('Fusing layers... ')
+        print('Fusing layers ...')
         for m in self.model.modules():
             if type(m) is Conv and hasattr(m, 'bn'):
                 m.conv = fuse_conv_and_bn(m.conv, m.bn)  # update conv
@@ -236,6 +237,8 @@ class Model(nn.Module):
                 m.forward = m.fuseforward  # update forward
             elif type(m) is nn.Upsample:
                 m.recompute_scale_factor = None  # torch 1.11.0 compatibility
+        # EM added
+        print('\r\033[1ADetection network successfully built. \033[K')
         self.info()
         return self
 

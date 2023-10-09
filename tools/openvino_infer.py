@@ -6,9 +6,9 @@ import time
 import copy
 import argparse
 
-from utils.transform.region_transform import four_point_transform
-from utils.io.cv_img import cv_imread, cv_imaddtext # EM reconstructed
-from utils.io.strmod import get_all_file_path
+from utils.formatter.transform import four_point_transform
+from utils.formatter.cv_img import cv_imread, cv_imaddtext
+from utils.components.strmod import get_all_file_path
 
 def cv_imread(path):
     img=cv2.imdecode(np.fromfile(path,dtype=np.uint8),-1)

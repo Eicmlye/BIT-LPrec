@@ -1,5 +1,69 @@
 import os
-import time
+
+def get_all_file_path(root_path: str, all_file_list: list[str], extension: list[str] = None):
+    """
+    递归地取出 `root_path` 中所有以 `extension` 的元素结尾的文件路径, 并追加到 `all_file_list` 中.
+    """
+    
+    if os.path.isfile(root_path): # 根目录为文件时, 直接处理该文件
+        all_file_list.append(root_path)
+
+        return
+
+    # 根目录非文件时, 处理其中的所有文件和子目录
+    file_list = os.listdir(root_path) # 获取目录中的所有文件和子目录路径
+
+    # 不指定特定拓展名, 则将所有文件路径都取出
+    if extension is None:
+        for temp in file_list:
+            if os.path.isfile(os.path.join(root_path, temp)):
+                all_file_list.append(os.path.join(root_path, temp))
+            else: # 递归取出子目录中的文件路径
+                get_all_file_path(os.path.join(root_path, temp), all_file_list)
+        
+        return
+
+    # 指定拓展名, 则只取出相应拓展名的文件路径
+    for temp in file_list:
+        if os.path.isfile(os.path.join(root_path, temp)):
+            for ext in extension:
+                if (temp.endswith(ext)):
+                    all_file_list.append(os.path.join(root_path, temp))
+                    break
+        else: # 递归取出子目录中的文件路径
+            get_all_file_path(os.path.join(root_path, temp), all_file_list)
+
+def get_extension_index(filename: str):
+    """
+    捕获拓展名的分割点位置.
+    """
+
+    for index in range(len(filename)):
+        rev_ind = len(filename) - index - 1
+        if filename[rev_ind] == '.':
+            return rev_ind
+        
+    raise RuntimeError("No extension found. ")
+        
+def control_filename_len(path: str, maxlen: int = 20):
+    """
+    将文件名字符串的长度控制在一定范围内, 若超长则省略中间的部分内容. 
+    """
+    
+    if (maxlen <= 10):
+        print("Control length too short (lower than 11). ")
+        return path
+
+    short_path = os.path.basename(path)
+    if len(short_path) > maxlen:
+        extension = get_extension_index(short_path)
+
+        # 省略号占 3 字符, 拓展名占 len(short_path) - extension 字符
+        prefix_len = int((maxlen - 3 - (len(short_path) - extension)) / 2)
+
+        short_path = short_path[:prefix_len] + '...' + short_path[extension - prefix_len:]
+        
+    return short_path
 
 class OutputItem:
     """
@@ -23,7 +87,7 @@ class OutputItem:
     def get_result(self):
         return self._files['result']
     
-    def get_log(self):
+    def get_log(self) -> str:
         return self._files['log']
 
     def standard_image_filename(self, rec_result: str):
@@ -121,114 +185,3 @@ class FilenameModifier:
         self.output_list.standard_image_filename(fileindex, rec_result)
         
         return
-
-
-class Timer:
-    """
-    计时器. 
-    """
-
-    def __init__(self):
-        self._time = time.time()
-
-    def refresh(self):
-        """
-        刷新时间戳
-        """
-        
-        self._time = time.time()
-
-    def gap(self):
-        """
-        刷新时间戳, 并返回距离上次时间戳的时差.
-        """
-        
-        prev_time = self._time
-        self.refresh()
-
-        return self._time - prev_time
-    
-class Counter:
-    """
-    计数器. 
-    """
-
-    def __init__(self):
-        self.count = 0
-
-    def inc(self):
-        self.count += 1
-
-class CmdPrompt:
-    """
-    发送命令行提示. 
-    """
-
-    def __init__(self):
-        self.timer = Timer()
-
-
-def get_all_file_path(root_path: str, all_file_list: list[str], extension: list[str] = None):
-    """
-    递归地取出 `root_path` 中所有以 `extension` 的元素结尾的文件路径, 并追加到 `all_file_list` 中.
-    """
-    
-    if os.path.isfile(root_path): # 根目录为文件时, 直接处理该文件
-        all_file_list.append(root_path)
-
-        return
-
-    # 根目录非文件时, 处理其中的所有文件和子目录
-    file_list = os.listdir(root_path) # 获取目录中的所有文件和子目录路径
-
-    # 不指定特定拓展名, 则将所有文件路径都取出
-    if extension is None:
-        for temp in file_list:
-            if os.path.isfile(os.path.join(root_path, temp)):
-                all_file_list.append(os.path.join(root_path, temp))
-            else: # 递归取出子目录中的文件路径
-                get_all_file_path(os.path.join(root_path, temp), all_file_list)
-        
-        return
-
-    # 指定拓展名, 则只取出相应拓展名的文件路径
-    for temp in file_list:
-        if os.path.isfile(os.path.join(root_path, temp)):
-            for ext in extension:
-                if (temp.endswith(ext)):
-                    all_file_list.append(os.path.join(root_path, temp))
-                    break
-        else: # 递归取出子目录中的文件路径
-            get_all_file_path(os.path.join(root_path, temp), all_file_list)
-
-def get_extension_index(filename: str):
-    """
-    捕获拓展名的分割点位置.
-    """
-
-    for index in range(len(filename)):
-        rev_ind = len(filename) - index - 1
-        if filename[rev_ind] == '.':
-            return rev_ind
-        
-    raise RuntimeError("No extension found. ")
-        
-def control_filename_len(path: str, maxlen: int = 20):
-    """
-    将文件名字符串的长度控制在一定范围内, 若超长则省略中间的部分内容. 
-    """
-    
-    if (maxlen <= 10):
-        print("Control length too short (lower than 11). ")
-        return path
-
-    short_path = os.path.basename(path)
-    if len(short_path) > maxlen:
-        extension = get_extension_index(short_path)
-
-        # 省略号占 3 字符, 拓展名占 len(short_path) - extension 字符
-        prefix_len = int((maxlen - 3 - (len(short_path) - extension)) / 2)
-
-        short_path = short_path[:prefix_len] + '...' + short_path[extension - prefix_len:]
-        
-    return short_path

@@ -1,5 +1,3 @@
-# EM reconstructed.
-
 """
 解决 OpenCV 的文字 I/O 不兼容中文字符的诸多问题. 
 """

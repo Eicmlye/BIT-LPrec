@@ -1,9 +1,9 @@
 import os
-import cv2
 import numpy as np
 import shutil
 from tqdm import tqdm
-from utils.io.cv_img import cv_imread # EM reconstructed
+
+from utils.formatter.cv_img import cv_imread
 
 root = '/ssd_1t/derron/WiderFace'
 

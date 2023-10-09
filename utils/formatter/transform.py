@@ -1,5 +1,3 @@
-# EM reconstructed.
-
 import numpy as np
 import cv2
 
@@ -63,10 +61,11 @@ def four_point_transform(image, pts):
 
 def scale_coords_landmarks(img1_shape, coords, img0_shape, ratio_pad=None):
     """
-    【功能暂不确定】将 ROI 坐标还原为 ROI 区域的角点坐标列表. 
+    将 `img1` 中的角点坐标按比例缩放至 `img0` 中. 
     """
 
     # Rescale coords (xyxy) from img1_shape to img0_shape
+    # EM note: this coords is NOT xyxy, it's landmarks instead.
     if ratio_pad is None:  # calculate from img0_shape
         gain = min(img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1])  # gain = old / new
         pad = (img1_shape[1] - img0_shape[1] * gain) / 2, (img1_shape[0] - img0_shape[0] * gain) / 2  # wh padding
@@ -88,3 +87,15 @@ def scale_coords_landmarks(img1_shape, coords, img0_shape, ratio_pad=None):
     coords[:, 7].clamp_(0, img0_shape[0])  # y4
 
     return coords # coords is a torch.tensor here. 
+
+def get_split_merge(img):
+    """
+    将双行车牌整形拼裁为单行车牌.
+    """
+    h, w, c = img.shape
+    img_upper = img[0: int(5 / 12 * h), :]
+    img_lower = img[int(1 / 3 * h): , :]
+    img_upper = cv2.resize(img_upper, (img_lower.shape[1], img_lower.shape[0]))
+    new_img = np.hstack((img_upper, img_lower))
+    
+    return new_img

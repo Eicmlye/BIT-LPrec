@@ -3,8 +3,8 @@ import os
 import numpy as np
 from copy import deepcopy
 
-from utils.io.cv_img import cv_imread # EM reconstructed
-from utils.io.strmod import get_all_file_path
+from utils.formatter.cv_img import cv_imread
+from utils.components.strmod import get_all_file_path
 
 def xywh2yolo(rect,landmarks_sort,img):
     h,w,c =img.shape
@@ -42,7 +42,7 @@ if __name__ == "__main__":
         if not pic_.endswith(".jpg"):
             continue
         count+=1
-        img = cv_imread(pic_) # EM modified
+        img = cv_imread(pic_)
         img_name = os.path.basename(pic_)
         txt_name = img_name.replace(".jpg",".txt")
         txt_path = os.path.join(pic_file,txt_name)

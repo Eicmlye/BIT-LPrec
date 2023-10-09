@@ -8,8 +8,8 @@ class Parser:
     def __init__(self):
         parser = argparse.ArgumentParser()
 
-        parser.add_argument('--car_rec_model', type=str, default='weights/car_rec_color.pth', help='车辆识别模型路径, model.pth')
         parser.add_argument('--detect_model', nargs = '+', type = str, default = 'weights/plate_detect.pt', help = '检测模型路径, model.pt')
+        parser.add_argument('--car_rec_model', type=str, default='weights/car_rec_color.pth', help='车辆识别模型路径, model.pth')
         parser.add_argument('--plate_rec_model', type=str, default='weights/plate_rec_color.pth', help='车牌识别模型路径, model.pth')
         
         parser.add_argument('--try_gpu', type=bool, default=None, help="是否使用 GPU, 默认为自动选择")

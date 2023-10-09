@@ -13,7 +13,7 @@ download: bash data/scripts/get_voc.sh
 train: /mnt/Gpan/Mydata/pytorchPorject/yolov5-face/ccpd/train_detect 
 val: /mnt/Gpan/Mydata/pytorchPorject/yolov5-face/ccpd/val_detect
 # number of classes
-nc: 3
+nc: 2
 
 # class names
-names: ['single', 'double', 'car']
+names: ['single', 'double']
