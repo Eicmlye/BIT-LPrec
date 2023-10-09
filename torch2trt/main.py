@@ -4,14 +4,18 @@ import cv2
 import copy
 import torch
 import argparse
+
 root_path=os.path.dirname(os.path.abspath(os.path.dirname(__file__))) # 项目根路径：获取当前路径，再上级路径
 sys.path.append(root_path)  # 将项目根路径写入系统路径
+
 from utils.general import check_img_size,non_max_suppression_face,scale_coords,xyxy2xywh
 from utils.train.datasets import letterbox
 from main import scale_coords_landmarks, show_results
 from torch2trt.trt_model import TrtModel
-from utils.io.cv_img import cv_imread # EM reconstructed
+from utils.formatter.cv_img import cv_imread
+
 cur_path=os.path.abspath(os.path.dirname(__file__))
+
 def img_process(img_path,long_side=640,stride_max=32):
     '''
     图像预处理

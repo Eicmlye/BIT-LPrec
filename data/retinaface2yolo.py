@@ -1,11 +1,11 @@
 import os
 import os.path
-import sys
 import torch
 import torch.utils.data as data
 import cv2
 import numpy as np
-from utils.io.cv_img import cv_imread # EM reconstructed
+
+from utils.formatter.cv_img import cv_imread
 
 class WiderFaceDetection(data.Dataset):
     def __init__(self, txt_path, preproc=None):

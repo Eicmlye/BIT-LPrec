@@ -17,4 +17,4 @@ val: /mnt/Gpan/Mydata/pytorchPorject/datasets/ccpd/train_car_plate/val_detect
 nc: 3
 
 # class names
-names: [ 'single_plate','double_plate','car']
+names: [ 'single_plate', 'double_plate', 'car' ]

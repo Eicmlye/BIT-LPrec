@@ -384,9 +384,9 @@ def non_max_suppression_face(prediction, conf_thres=0.25, iou_thres=0.45, classe
 
     \# EM revised documentation.
 
-         detections with shape: n*6 (`ROI`, `conf`, `CORNER`, `cls`), 
+         detections with shape: n*6 (`ROI`, `conf`, `LANDMARKS`, `cls`), 
          where `ROI` = (x1, y1, x2, y2)
-         and `CORNER` = (tlx, tly, trx, try, brx, bry, blx, bry)
+         and `LANDMARKS` = (tlx, tly, trx, try, brx, bry, blx, bry)
     """
 
     nc = prediction.shape[2] - 13  # number of classes

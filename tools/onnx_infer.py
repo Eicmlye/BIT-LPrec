@@ -4,11 +4,11 @@ import cv2
 import copy
 import os
 import argparse
-from utils.transform.region_transform import four_point_transform
+from utils.formatter.transform import four_point_transform
 import time
 
-from utils.io.cv_img import cv_imread, cv_imaddtext # EM reconstructed
-from utils.io.strmod import get_all_file_path
+from utils.formatter.cv_img import cv_imread, cv_imaddtext
+from utils.components.strmod import get_all_file_path
 
 plate_color_list = ['黑色', '蓝色', '绿色', '白色', '黄色']
 plate_name = r"#京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新学警港澳挂使领民航危0123456789ABCDEFGHJKLMNPQRSTUVWXYZ险品"

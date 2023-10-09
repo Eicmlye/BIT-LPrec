@@ -2,9 +2,9 @@ import os
 import shutil
 import numpy as np
 
-from utils.io.cv_img import cv_imread # EM reconstructed
-from utils.transform.region_transform import order_points # EM reconstructed
-from utils.io.strmod import get_all_file_path
+from utils.formatter.cv_img import cv_imread
+from utils.formatter.transform import order_points
+from utils.components.strmod import get_all_file_path
 
 def get_partical_ccpd():
     ccpd_dir = r"/mnt/Gpan/BaiduNetdiskDownload/CCPD1/CCPD2020/ccpd_green"

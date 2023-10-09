@@ -1,11 +1,10 @@
 import os
-import cv2
 import numpy as np
 import shutil
 import sys
 from tqdm import tqdm
 
-from utils.io.cv_img import cv_imread # EM reconstructed
+from utils.formatter.cv_img import cv_imread
 
 def xywh2xxyy(box):
     x1 = box[0]

@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 from utils.general import xyxy2xywh, xywh2xyxy, xywhn2xyxy, clean_str
 from utils.torch_utils import torch_distributed_zero_first
-from utils.io.cv_img import cv_imread # EM reconstructed
+from utils.formatter.cv_img import cv_imread
 
 # Parameters
 help_url = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'

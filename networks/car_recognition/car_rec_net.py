@@ -14,17 +14,17 @@ __all__ = ['carNet', 'carResNet18']
 myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 256]
 # myCfg = [8,'M',16,'M',32,'M',64,'M',96]
 class carNet(nn.Module):
-    def __init__(self, cfg=None, num_classes=3):
+    def __init__(self, cfg: list = None, num_classes: int = 3):
         super(carNet, self).__init__()
         if cfg is None:
             cfg = myCfg
         self.feature = self.make_layers(cfg, True)
         self.gap = nn.AdaptiveAvgPool2d((1, 1))
         self.classifier = nn.Linear(cfg[-1], num_classes)
-        # self.classifier = nn.Conv2d(cfg[-1],num_classes,kernel_size=1,stride=1)
+        # self.classifier = nn.Conv2d(cfg[-1], num_classes, kernel_size=1, stride=1)
         # self.bn_c= nn.BatchNorm2d(num_classes)
         # self.flatten = nn.Flatten()
-    def make_layers(self, cfg, batch_norm=False):
+    def make_layers(self, cfg: list, batch_norm: bool = False):
         layers = []
         in_channels = 3
         for i in range(len(cfg)):
@@ -47,7 +47,7 @@ class carNet(nn.Module):
                     in_channels = cfg[i]
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         y = self.feature(x)
         y = nn.AvgPool2d(kernel_size=3, stride=1)(y)
         y = y.view(x.size(0), -1)
@@ -57,7 +57,7 @@ class carNet(nn.Module):
         return y
 
 class carResNet18(nn.Module):
-    def __init__(self, num_classes=1000):
+    def __init__(self, num_classes: int = 1000):
         super(carResNet18, self).__init__()
         model_ft = models.resnet18(pretrained=True)
         self.model = model_ft
@@ -65,7 +65,7 @@ class carResNet18(nn.Module):
         self.model.averagePool = nn.AvgPool2d((5, 5), stride=1, ceil_mode=True)
         self.cls=nn.Linear(512, num_classes)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         x = self.model.conv1(x)
         x = self.model.bn1(x)
         x = self.model.relu(x)

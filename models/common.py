@@ -11,7 +11,6 @@ from PIL import Image, ImageDraw
 from utils.train.datasets import letterbox
 from utils.general import non_max_suppression, make_divisible, scale_coords, xyxy2xywh
 from utils.train.plots import color_list
-from utils.io.cv_img import cv_imread # EM reconstructed
 
 def autopad(k, p=None):  # kernel, padding
     # Pad to 'same'

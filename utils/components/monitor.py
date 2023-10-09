@@ -5,16 +5,46 @@ import time
 
 from argparse import Namespace
 
-from detect import Detecter
-from utils.io.strmod import FilenameModifier
+from utils.components.detect import Detecter
+from utils.components.strmod import FilenameModifier
 
 from models.experimental import attempt_load
 from networks.car_recognition.car_rec import init_car_rec_model
 from networks.plate_recognition.plate_rec import init_plate_rec_model
-from utils.io.cv_img import cv_imread, cv_imwrite
-from utils.io.strmod import control_filename_len # EM added
-from utils.test.parking_detect import ParkingPos, CandidateParkingPos, update_parking_info, save_action_info # EM added
-from utils.test.video_eta import video_processing_prompt # EM added
+from utils.formatter.cv_img import cv_imread, cv_imwrite
+from utils.components.strmod import control_filename_len
+from utils.components.detect import ParkingLot
+
+def time2str(time_in_sec: int):
+    assert time_in_sec >= 0
+
+    day = time_in_sec // 3600 // 24
+
+    result = ""
+    if day > 30:
+        result += f"至少 30 天"
+        return result
+    
+    if day > 0:
+        result += f"{day} 天 "
+
+    time_in_sec -= day * 3600 * 24
+    hr = time_in_sec // 3600
+
+    time_in_sec -= hr * 3600
+    min = time_in_sec // 60
+    
+    time_in_sec -= min * 60
+    sec = time_in_sec % 60
+
+    if hr > 0:
+        result += f"{hr:02d}:{min:02d}:{sec:02d}"
+    elif min > 0:
+        result += f"{min:02d}:{sec:02d}"
+    elif sec >= 0:
+        result += f"{sec} s"
+
+    return result
 
 class MediaProcessor:
     """
@@ -27,10 +57,10 @@ class MediaProcessor:
     def __init__(self, opt: Namespace):
         self.use_gpu, self.device = self._choose_device(opt.try_gpu) # GPU 或 CPU
         models = self._load_models({
-                                            'detect': opt.detect_model,
-                                            'carrec': opt.car_rec_model,
-                                            'platerec': opt.plate_rec_model
-                                        }) # 加载好的模型字典
+                                        'detect': opt.detect_model,
+                                        'carrec': opt.car_rec_model,
+                                        'platerec': opt.plate_rec_model
+                                    }) # 加载好的模型字典
 
         precision = opt.img_size # 处理精度
 
@@ -44,7 +74,11 @@ class MediaProcessor:
 
         self._show_args(opt) # 打印程序设置
 
+        # 检测与识别
         self.detecter = Detecter(precision, models, self.device, draw_rec, show_color)
+
+        # 车位管理
+        self.parkinglot = ParkingLot()
 
     def run(self):
         """
@@ -61,22 +95,24 @@ class MediaProcessor:
         输出命令行参数的详细信息. 
         """
 
+        CLEAR = '\033[K\n'
+
         # beginning line
-        print("========")
+        print("========", end=CLEAR)
 
         # models
-        print("检测模型: " + opt.detect_model)
-        print("车辆识别模型: " + opt.car_rec_model)
-        print("车牌识别模型: " + opt.plate_rec_model)
+        print("检测模型: " + opt.detect_model, end=CLEAR)
+        print("车辆识别模型: " + opt.car_rec_model, end=CLEAR)
+        print("车牌识别模型: " + opt.plate_rec_model, end=CLEAR)
 
         # I/O
-        print(("待识别视频: " if self.is_video else "待识别图片: ") + self.name_modifier.root)
+        print(("待识别视频: " if self.is_video else "待识别图片: ") + self.name_modifier.root, end=CLEAR)
 
-        print("处理结果保存位置: " + self.name_modifier.output_root)
+        print("处理结果保存位置: " + self.name_modifier.output_root, end=CLEAR)
 
         # hyperparameters
-        print("模型超参数设置: ")
-        print("\t处理精度(需为 32 的倍数): " + str(opt.img_size))
+        print("模型超参数设置: ", end=CLEAR)
+        print("\t处理精度(需为 32 的倍数): " + str(opt.img_size), end=CLEAR)
 
         # extra settings
         print("其他设置: ")
@@ -86,13 +122,13 @@ class MediaProcessor:
         print("\t以 GPU 模式处理" if opt.try_gpu == True and self.use_gpu else '', end='')
         print("\t无可用GPU, 强制以 CPU 模式处理" if opt.try_gpu == True and not self.use_gpu else '', end='')
         print("\t以 CPU 模式处理" if opt.try_gpu == False else '', end='')
-        print('')
+        print('', end=CLEAR)
 
-        print('\t' + ('' if opt.do_draw else '不') + "绘制识别框")
-        print('\t' + ('' if opt.is_color else '不') + "输出对象颜色信息")
+        print('\t' + ('' if opt.do_draw else '不') + "绘制识别框", end=CLEAR)
+        print('\t' + ('' if opt.is_color else '不') + "输出对象颜色信息", end=CLEAR)
             
         # ending line
-        print("========")
+        print("========", end=CLEAR)
         
     def _load_models(self, model_dict: dict[str, str]):
         """
@@ -237,9 +273,6 @@ class MediaProcessor:
                 totalFrames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT)) # 视频文件的帧数
 
                 last_flush = time.time() # 上次刷新预测剩余时间的时刻
-                
-                candidates = list[CandidateParkingPos]()
-                parkings = list[ParkingPos]()
 
                 while True:
                     t1 = cv2.getTickCount()
@@ -253,15 +286,14 @@ class MediaProcessor:
                     print(f"({frame_count / totalFrames * 100:.2f}%) 第 {frame_count}/{totalFrames} 帧\033[K")
                     obj_list = self.detecter.detect_recognition_plate(img)
 
-                    candidates, parkings = update_parking_info(frame_count, obj_list,
-                                                             int(totalfps), candidates, parkings)
+                    self.parkinglot.update_parking_info(frame_count, obj_list, int(totalfps))
 
-                    ori_img, _ = self.detecter.visualize_result(img, obj_list)
+                    ori_img, _ = self.detecter.visualize_result(img, obj_list, self.parkinglot.parkings)
 
                     t2 = cv2.getTickCount()
                     time_gap = t2 - t1
-                    process_time, last_flush = video_processing_prompt(time_gap, totalFrames, frame_count,
-                                                                       process_time, last_flush)
+                    process_time, last_flush = self._video_processing_prompt(time_gap, totalFrames, frame_count,
+                                                                             process_time, last_flush)
 
                     out.write(ori_img)
 
@@ -269,12 +301,29 @@ class MediaProcessor:
                 print("视频加载失败. ")
 
             print(f"\r\033[1A\033[K\033[1A\033[K\033[1A\033[K共处理 {frame_count} 帧, "\
-                f"平均处理帧速率 {totalFrames / process_time:.2f} fps. ")
+                f"平均处理帧速率 {totalFrames / process_time:.2f} fps. \033[K")
 
             # 打印订单图片, 保存到 save_path 目录下.
-            save_action_info(parkings, capture, self.name_modifier.output_root)
+            self.parkinglot.save_action_info(capture, self.name_modifier.output_root, self.name_modifier.get_log(fileindex))
 
             capture.release()
             out.release()
             cv2.destroyAllWindows()
-    
+
+    def _video_processing_prompt(self, time_gap, total_frame, cur_frame, process_time, last_flush):
+        """
+        更新处理所用的总时间, 并打印预计剩余时间. 
+        """
+        
+        infer_time = time_gap / cv2.getTickFrequency()
+
+        eta = (total_frame - cur_frame) * infer_time
+        process_time += infer_time
+        
+        # 每秒更新一次预测剩余时间.
+        do_flush = (time.time() - last_flush >= 1)
+        print(("已处理 " + time2str(int(process_time)) + ", 预计还需 " + time2str(int(eta)) + ". \033[K") if do_flush else '')
+        last_flush = time.time() if do_flush else last_flush
+
+        return process_time, last_flush
+   

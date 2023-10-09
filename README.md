@@ -1,7 +1,7 @@
 # **最全车牌识别算法，支持12种中文车牌类型**
 
-本项目主要参考并修改自: 
-1. [全种类车牌识别](https://github.com/we0091234/Chinese_license_plate_detection_recognition), 本项目修改自该项目的 YOLOv5 版.
+本项目参考并重构自: 
+1. [全种类车牌识别](https://github.com/we0091234/Chinese_license_plate_detection_recognition), 本项目重构自该项目的 YOLOv5 版.
 2. [车牌检测训练](https://github.com/we0091234/Chinese_license_plate_detection_recognition/tree/main/readme)
 3. [车牌识别训练](https://github.com/we0091234/crnn_plate_recognition)
 4. [车辆识别训练](https://github.com/we0091234/Car_recognition)
@@ -63,7 +63,7 @@
 python main.py
 ```
 
-测试图片目录为 `input/imgs/`，图片识别结果保存在 `output/`.
+测试图片目录为 `input/imgs/`, 图片识别结果保存在 `output/`.
 
 ### 视频识别测试  
 
@@ -82,14 +82,15 @@ python main.py --is_video
 | 参数 | 定义 | 用法 |
 | --- | --- | --- |
 | `detect_model` | 车牌检测模型的路径, 一般保存在 `weights/` | `--detect_model <my_model_path>` |
-| `plate_rec_model` | 车牌识别模型的路径, 一般保存在 `weights/` | `--plate_rec_model <my_model_path>` |
 | `car_rec_model` | 车辆识别模型的路径, 一般保存在 `weights/` | `--car_rec_model <my_model_path>` |
+| `plate_rec_model` | 车牌识别模型的路径, 一般保存在 `weights/` | `--plate_rec_model <my_model_path>` |
+| `try_gpu` | 是否尝试获取 GPU 资源, 通常用默认值 |  |
+| `image_size` | 处理精度, 需为 $32$ 的倍数. 该参数会影响识别阈值, 提高该参数会使低分目标显示出来 | |
 | `is_video` | 待处理的是否为视频. 该参数为触发式, 不接受主动赋值. | `--is_video` |
-| `is_color` | 是否识别颜色. 该参数为触发式, 不接受主动赋值. | `--is_color` |
 | `do_draw` | 是否绘制识别框. 该参数为触发式, 不接受主动赋值. | `--do_draw` |
+| `is_color` | 是否识别颜色. 该参数为触发式, 不接受主动赋值. | `--is_color` |
 | `image_path` | 当未指定 `--is_video` 时, 表示待识别图片(或目录)的路径 | `--image_path <my_image_path>` |
 | `video_path` | 当指定了 `--is_video` 时, 表示待识别视频的路径 | `--video_path <my_video_file>` |
-| `image_size` | 需为 $32$ 的倍数. 该参数会影响识别阈值, 提高该参数会使低分目标显示出来 | |
 | `output` | 输出结果保存位置 | `--output <my_output_path>` |
 
 ## 训练方法
@@ -100,7 +101,7 @@ python main.py --is_video
 
 [车辆和车牌检测训练](https://github.com/we0091234/Car_recognition)
 
-训练配置文件路径为 `data/plateAndCar.yaml`. 将其中的 `train` `val` 路径分别改为训练集、验证集的绝对路径. 
+训练配置文件路径为 `data/plateAndCar.yaml`. 将其中的 `train` 和 `val` 路径分别改为训练集、验证集的绝对路径. 
 
 #### 常见问题
 
@@ -124,7 +125,13 @@ python main.py --is_video
 
 - **ROI 坐标**: 格式为 `(x1, y1, x2, y2)`, 记录目标区域的四条边框线坐标. 变量通常命名为 `xyxy`. 若无特别说明, ROI 区域均用 ROI 坐标表示. 
 
-- **角点坐标列表**: 格式为 `(tlx, tly, trx, try, brx, bry, blx, bly)`, 从左上角按顺时针序依次记录四边形目标区域角点在原始图像中的坐标. 变量通常命名为 `coords`、`pts` 等.
+- **角点坐标 (landmarks) 列表**: 格式为 `(tlx, tly, trx, try, brx, bry, blx, bly)`, 从左上角按顺时针序依次记录四边形目标区域角点在原始图像中的坐标. 变量通常命名为 `coords`、`pts`、`landmarks` 等.
+
+### 组件和功能
+
+- [识别网络结构与加载](./networks/README.md)
+- [控制与检测识别组件](./utils/components/README.md)
+- [相关功能](./utils/formatter/README.md)
 
 ## 参考资料
 
