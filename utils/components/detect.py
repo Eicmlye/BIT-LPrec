@@ -646,7 +646,7 @@ class ParkingLot:
             output_path = os.path.join(save_path, filename)
             cv_imwrite(img, output_path)
             print(f"\r\033[1A{count}\t已打印订单截图 " + filename + "\033[K")
-            f.write(f"[{timestamp}] {action.plate} {status_list[status]} 车位{str(parking.id)}\n")
+            f.write(f"[{timestamp}] {action.plate} {status_list[status]} 车位{str(parking.id)}\n") # 打印日志
 
     def save_action_info(self, capture: cv2.VideoCapture, save_path: str, log_path: str):
         print('开始打印订单...', end='\n\n')
