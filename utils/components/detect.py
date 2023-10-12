@@ -23,7 +23,7 @@ class ObjectInfo:
                  rect: list[int] = None, conf: float = None,
                  color: str = None, color_conf: float = None,
                  landmarks: list[int] = None, plate: str = None,
-                 roi_height: int = None):
+                 roi_height: int = None, car_plate_list: list[str] = list[str]()):
         self.type = class_label # 对象类型: 0-单层车牌，1-双层车牌, 2-车辆
         self.roi = rect # ROI 区域坐标
         self.conf = conf # 检测得分
@@ -34,6 +34,8 @@ class ObjectInfo:
         self.plate = plate # 车牌号
 
         self.roi_height = roi_height # 透视标准化后的车牌图像高度
+
+        self.car_plate_list = car_plate_list # 视频中该车识别到的车牌号及识别出该车牌的总帧数
 
 class CandidateParkingPos:
     """
@@ -168,6 +170,8 @@ class Detecter:
 
         `obj_list`: 识别到的所有对象及其信息. 
 
+        `parkings`:
+
         ## Return:
         `orgimg`: 绘制结果后的图像.
 
@@ -177,13 +181,13 @@ class Detecter:
         all_plate_info = list[str]() # 本图像中所有车牌识别信息.
         primary_plate = "" # 对输出图片重命名的字符串. 
 
-        self._visualize_parkings(orgimg, parkings)
-
         for obj in obj_list:
             if obj.type == 2: # car
-                self._visualize_car(orgimg, obj)
+                orgimg = self._visualize_car(orgimg, obj)
             else: # plate
-                primary_plate = self._visualize_plate(orgimg, obj, primary_plate, all_plate_info)
+                orgimg, primary_plate = self._visualize_plate(orgimg, obj, primary_plate, all_plate_info)
+        
+        orgimg = self._visualize_parkings(orgimg, parkings)
         
         if len(all_plate_info) == 0:
             print('\t\033[31m未识别到有效对象. \033[0m\033[K', end='')
@@ -212,6 +216,8 @@ class Detecter:
                         (rect_area[0], rect_area[1]),
                         (rect_area[2], rect_area[3]),
                         self.roi_colors[obj.type], 2)
+            
+        return orgimg
     
     def _visualize_plate(self, orgimg: np.ndarray, obj: ObjectInfo, primary_plate: str, all_plate_info: list[str]):
         assert obj.type in {0, 1}
@@ -249,7 +255,7 @@ class Detecter:
                         (rect_area[2], rect_area[3]),
                         self.roi_colors[obj.type], 2)
             
-        return primary_plate
+        return orgimg, primary_plate
     
     def _visualize_parkings(self, orgimg: np.ndarray, parkings: list[ParkingPos] = None):
         if not parkings is None:
@@ -266,19 +272,16 @@ class Detecter:
                 labelSize = cv2.getTextSize(parking_text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1) # 获得字体的大小
                 if rect_area[0] + labelSize[0][0] > orgimg.shape[1]: # 防止显示的文字越界
                     rect_area[0] = int(orgimg.shape[1] - labelSize[0][0])
-                try:
-                    orgimg = cv2.rectangle(orgimg, # 画文字框
-                                           (int(rect_area[0]), int(rect_area[1] - round(1.6 * labelSize[0][1]))),
-                                           (int(rect_area[0] + round(1.2 * labelSize[0][0])), int(rect_area[1] + labelSize[1])), 
-                                           (0, 0, 255), cv2.FILLED)
-                except cv2.error:
-                    print((rect_area[0], int(rect_area[1] - round(1.6 * labelSize[0][1]))))
-                    print((int(rect_area[0] + round(1.2 * labelSize[0][0])), rect_area[1] + labelSize[1]))
-                    input()
+                orgimg = cv2.rectangle(orgimg, # 画文字框
+                                        (int(rect_area[0]), int(rect_area[1] - round(1.6 * labelSize[0][1]))),
+                                        (int(rect_area[0] + round(1.2 * labelSize[0][0])), int(rect_area[1] + labelSize[1])), 
+                                        (0, 0, 255), cv2.FILLED)
                 
                 orgimg = cv_imaddtext(orgimg, parking_text, rect_area[0],
                                       int(rect_area[1] - round(1.6 * labelSize[0][1])),
                                       (255, 255, 255), 21)
+                
+        return orgimg
     
     def _get_rec_landmark(self, img: np.ndarray, xyxy: list[int], conf: float,
                           landmarks: list[int], obj_type: int, rec_model):
@@ -322,14 +325,6 @@ class Detecter:
             
             result = ObjectInfo(obj_type, rect, conf, car_color, color_conf)
 
-            # result_dict['rect'] = rect # 车辆 ROI 区域
-            # result_dict['score'] = conf # 车辆区域检测得分
-            # result_dict['object_no'] = obj_type
-            # result_dict['car_color'] = ''
-            # if self.show_color:
-            #     result_dict['car_color'] = car_color
-            #     result_dict['color_conf'] = color_conf
-
             return result
 
         # Plate recognition.
@@ -353,17 +348,6 @@ class Detecter:
         result = ObjectInfo(obj_type, rect, conf, plate_color,
                             landmarks=landmarks_np.tolist(),
                             plate=plate_number, roi_height=roi_img.shape[0])
-
-        # result_dict['rect'] = rect # 车牌 ROI 区域
-        # result_dict['detect_conf'] = conf # 检测区域得分
-        # result_dict['landmarks'] = landmarks_np.tolist() # 车牌角点坐标
-        # result_dict['plate_no'] = plate_number # 车牌号
-        # result_dict['roi_height'] = roi_img.shape[0] # 车牌高度
-        # result_dict['plate_color'] = ""
-        # if self.show_color:
-        #     result_dict['plate_color'] = plate_color # 车牌颜色
-        #     # result_dict['color_conf'] = color_conf # 颜色得分
-        # result_dict['object_no'] = obj_type # 对象类型: 0-单层车牌，1-双层车牌
         
         return result
     
@@ -443,14 +427,30 @@ def get_iou(pos_1: list[int], pos_2: list[int]):
 
 def find_plate(car_roi: list[int], plate_list: list[ObjectInfo]):
     for plate in plate_list:
-        plate_roi = plate.roi
-        if car_roi[0] <= plate_roi[0]\
-            and car_roi[1] <= plate_roi[1]\
-            and car_roi[2] >= plate_roi[2]\
-            and car_roi[3] >= plate_roi[3]:
+        if car_roi[0] <= plate.roi[0]\
+            and car_roi[1] <= plate.roi[1]\
+            and car_roi[2] >= plate.roi[2]\
+            and car_roi[3] >= plate.roi[3]:
             return plate.plate
     
     return ''
+
+def find_roi(this_plate: str, plate_list: list[ObjectInfo], car_list: list[ObjectInfo]):
+    obj = None
+    for plate in plate_list:
+        if plate.plate == this_plate:
+            obj = plate
+            break
+
+    if not obj is None:
+        for car in car_list:
+            if car.roi[0] <= obj.roi[0]\
+                and car.roi[1] <= obj.roi[1]\
+                and car.roi[2] >= obj.roi[2]\
+                and car.roi[3] >= obj.roi[3]:
+                return car.roi
+    
+    return None
 
 def time2str(time_in_msec: int):
     assert time_in_msec >= 0
@@ -503,7 +503,10 @@ class ParkingLot:
 
                 if iou > 0.7:
                     if parking.get_status() == 1:
-                        # 该车正占用该车位
+                        # 视为该车正占用该车位, 当然也可能这是另一辆车完全挡住了已停入库的车辆, 
+                        # 但图像的深度信息难以提取, 故暂时直接视为占用同一车位.
+                        # TODO: 相互有完全覆盖关系的车位, 可以考虑按照 iou 值选定其进入的车位. 
+                        # 但如何确定这些车位确实是互不相同的新车位仍有难度.
                         car_list.remove(car)
                         break
                     # got in but not settled down yet
@@ -518,15 +521,25 @@ class ParkingLot:
                     this_plate = find_plate(car.roi, plate_list)
                     if parking.get_status() == 3: # 视为入库
                         parking.getin.append(Action(cur_frame, this_plate))
-                    elif parking.get_status() == 1 and this_plate == parking.occupy[-1].plate: # 视为出库
+                        car_list.remove(car)
+                        break
+                    
+                    if parking.get_status() == 1 and this_plate == parking.occupy[-1].plate: # 视为出库
                         parking.getout.append(Action(cur_frame, this_plate))
-                    car_list.remove(car)
-                    break
+                        car_list.remove(car)
+                        break
+
+                    # 否则:
+                    # 1. 车位处于占用状态且车牌不匹配, 则或者占用车位的车大部分被该车遮挡, 
+                    # 或者该车为占用车位的车且其车牌被其他后来车遮挡.
+                    # 2. 车位处于驶入或驶出状态, 此时应删除车辆信息.
 
         # 然后检查是否有空车位
         for parking in self.parkings:
-            if parking.get_status() == 2 and cur_frame - parking.getout[-1].frame > parking_frame_thres: # 视为空位
-                parking.release.append(Action(cur_frame, parking.getout[-1].plate))
+            if parking.get_status() == 2 and cur_frame - parking.getout[-1].frame > parking_frame_thres:
+                this_roi = find_roi(parking.getout[-1].plate, plate_list, car_list) # 尝试寻找驶出的车辆是否还能被识别到
+                if this_roi is None or get_iou(parking.roi, this_roi) < 0.3: # 视为空位
+                    parking.release.append(Action(cur_frame, parking.getout[-1].plate))
 
     def _update_candidates(self, cur_frame: int, car_list: list[ObjectInfo]):
         """
@@ -646,7 +659,7 @@ class ParkingLot:
             output_path = os.path.join(save_path, filename)
             cv_imwrite(img, output_path)
             print(f"\r\033[1A{count}\t已打印订单截图 " + filename + "\033[K")
-            f.write(f"[{timestamp}] {action.plate} {status_list[status]} 车位{str(parking.id)}\n")
+            f.write(f"[{timestamp}] {action.plate} {status_list[status]} 车位{str(parking.id)}\n") # 打印日志
 
     def save_action_info(self, capture: cv2.VideoCapture, save_path: str, log_path: str):
         print('开始打印订单...', end='\n\n')

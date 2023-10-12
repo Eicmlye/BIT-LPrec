@@ -12,8 +12,8 @@
 
 ### `utils/components/detect.py`
 
-`class Detecter` 负责图像和视频的实际处理实现与结果可视化. 
+`class Detecter` 负责图像和视频的实际处理实现与结果可视化, 以及视频中潜在车位的检测、记录及车位订单信息的生成. 
 
 ### `utils/components/strmod.py`
 
-`class FilenameModifier` 负责输出图像、视频和日志文件名的控制, 以及视频中潜在车位的检测、记录及车位订单信息的生成. 
+`class FilenameModifier` 负责输出图像、视频和日志文件名的控制. 
